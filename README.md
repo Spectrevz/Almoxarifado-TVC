@@ -22,6 +22,7 @@
 Aplicação para gerenciar kits e movimentações de inventário (câmeras, baterias, equipamentos), com fluxo previsto em [TODO.md](TODO.md) com estrutura de dados definida e exemplos de insert em [Examples.md](Examples.md).
 
 ### Tecnologias
+
 - React 19 + React Router 7
 - TypeScript + Vite
 - Tailwind CSS
@@ -66,6 +67,7 @@ npm run start
 ## 🗂️ Banco de dados
 
 No `TODO.md` há esquema SQL proposto:
+
 - `inventario`
 - `kits`
 - `kit_itens`
@@ -74,7 +76,8 @@ No `TODO.md` há esquema SQL proposto:
 
 ## 🛠️ Próximas etapas
 
-### As próximas etapas estão em:
+### As próximas etapas estão em
+
 ### [TODO.md](TODO.md)
 
 ## 📚 Documentação
