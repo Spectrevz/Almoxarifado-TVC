@@ -17,19 +17,26 @@ import {
 } from "lucide-react";
 
 const menuItems = [
-  { path: "/", icon: LayoutDashboard, label: "Dashboard", color: "#f97316", glow: "rgba(249,115,22,0.2)" },
+  { path: "/", icon: BarChart3, label: "Relatórios", color: "#f97316", glow: "rgba(249,115,22,0.2)" },
+  { path: "/movimentacoes", icon: ArrowRightLeft, label: "Movimentações", color: "#22c55e", glow: "rgba(34,197,94,0.2)" },
   { path: "/inventario", icon: Package, label: "Inventário", color: "#3b82f6", glow: "rgba(59,130,246,0.2)" },
   { path: "/kits", icon: Boxes, label: "Kits", color: "#a855f7", glow: "rgba(168,85,247,0.2)" },
-  { path: "/movimentacoes", icon: ArrowRightLeft, label: "Movimentações", color: "#22c55e", glow: "rgba(34,197,94,0.2)" },
-  { path: "/relatorios", icon: BarChart3, label: "Relatórios", color: "#f59e0b", glow: "rgba(245,158,11,0.2)" },
 ];
 
 const pageTitles: Record<string, string> = {
-  "/": "Dashboard",
+  "/": "Relatórios",
   "/inventario": "Inventário",
   "/kits": "Kits",
   "/movimentacoes": "Movimentações",
-  "/relatorios": "Relatórios",
+  "/configuracoes": "Configurações",
+};
+
+const pageColors: Record<string, string> = {
+  "/": "#f97316",
+  "/movimentacoes": "#22c55e",
+  "/inventario": "#3b82f6",
+  "/kits": "#a855f7",
+  "/configuracoes": "#6b7f99",
 };
 
 export default function Layout() {
@@ -65,24 +72,27 @@ export default function Layout() {
           borderRight: "1px solid rgba(255,255,255,0.05)",
         }}
       >
-        {/* Orange accent strip */}
-        <div
+        {/* Linha vertical */}
+        { currentItem &&
+                <div
           className="absolute left-0 top-0 bottom-0 w-[3px]"
-          style={{ background: "linear-gradient(180deg, #f97316 0%, #f59e0b 50%, transparent 100%)" }}
+          style={{ background:currentItem.color }}
         />
+        }
 
-        {/* Logo area */}
+
+        {/* Logo */}
+        
         <div className="flex items-center h-16 px-5 gap-3 flex-shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
           <motion.div
+          onClick={() => setCollapsed(!collapsed)}
             whileHover={{ scale: 1.08 }}
-            className="relative flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg, #f97316 0%, #dc2626 100%)" }}
+            className="relative flex-shrink-0 w-8 h-9 rounded-xl flex items-center justify-center"
           >
-            <Radio className="w-4 h-4 text-white" />
-            {/* Live dot */}
-            <span
-              className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full animate-pulse-live border-2"
-              style={{ background: "#22c55e", borderColor: "#060a12" }}
+            <img
+              src="/logo.png"
+              alt="Logo"
+              className="w-9 h-9"
             />
           </motion.div>
 
@@ -98,18 +108,21 @@ export default function Layout() {
                 <p className="leading-none" style={{ color: "#e8edf5", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: "0.95rem" }}>
                   Almoxarifado
                 </p>
+
+                 {/* Comentei por nao ter necessidade, mas caso alguem queira algum detalhe como qual almoxarifado é
                 <p style={{ color: "#f97316", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 500, fontSize: "0.7rem", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                   TV Cultura
                 </p>
+                */}
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-        {/* Nav */}
+        {/* Nav vertical*/}
         <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto overflow-x-hidden">
           {menuItems.map((item, index) => (
-            <motion.div
+            <motion.div 
               key={item.path}
               initial={{ x: -24, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
@@ -168,12 +181,14 @@ export default function Layout() {
           ))}
         </nav>
 
-        {/* Divider */}
+        {/* Divisor inferior*/}
+        {!collapsed && (
         <div className="mx-3 h-px" style={{ background: "rgba(255,255,255,0.05)" }} />
-
-        {/* Bottom section */}
+ )}
+        {/* Categoria inferior */}
         <div className="px-3 py-3 space-y-1">
-          {/* User */}
+
+          {/* Usuário - sem necessidade, comentei caso seja necessario futuramente.
           <motion.div
             initial={{ y: 12, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -201,7 +216,7 @@ export default function Layout() {
                   className="flex-1 min-w-0"
                 >
                   <p className="truncate" style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 500, fontSize: "0.82rem", color: "#c8d6e8" }}>
-                    Almoxarife
+                    User
                   </p>
                   <p className="truncate" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "0.7rem", color: "#4a5d78" }}>
                     TV Cultura
@@ -210,8 +225,8 @@ export default function Layout() {
               )}
             </AnimatePresence>
           </motion.div>
-
-          {/* Settings + Logout - only show when expanded */}
+*/}
+          {/* Configurações */}
           <AnimatePresence>
             {!collapsed && (
               <motion.div
@@ -220,41 +235,43 @@ export default function Layout() {
                 exit={{ opacity: 0, height: 0 }}
                 className="flex gap-1 overflow-hidden"
               >
-                <button
-                  className="flex items-center gap-2 flex-1 rounded-lg px-3 py-2 transition-all duration-150 hover:bg-white/5"
-                  style={{ color: "#4a5d78", fontSize: "0.78rem", fontFamily: "'Space Grotesk', sans-serif" }}
+                <NavLink
+                  to="/configuracoes"
+                  className={({ isActive }) =>
+                    `flex items-center gap-2 flex-1 rounded-lg px-3 py-2 transition-all duration-150 overflow-hidden ${
+                      isActive ? "bg-white/10 text-white" : "hover:bg-white/5"
+                    }`
+                  }
+                  style={({ isActive }) => ({
+                    color: isActive ? "#c8d6e8" : "#4a5d78",
+                    fontSize: "0.78rem",
+                    fontFamily: "'Space Grotesk', sans-serif",
+                    borderLeft: isActive ? "3px solid #6b7f99" : "3px solid transparent",
+                  })}
                 >
                   <Settings className="w-3.5 h-3.5" />
                   Configurações
-                </button>
+                </NavLink>
+
+                {/* 
                 <button
                   className="rounded-lg p-2 transition-all duration-150 hover:bg-red-500/10 hover:text-red-400"
                   style={{ color: "#4a5d78" }}
                 >
                   <LogOut className="w-3.5 h-3.5" />
                 </button>
+                */}
+
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
         {/* Collapse toggle */}
-        <motion.button
-          onClick={() => setCollapsed(!collapsed)}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          className="absolute -right-3 top-20 w-6 h-6 rounded-full flex items-center justify-center z-20 border transition-colors hover:border-orange-500/50"
-          style={{
-            background: "#0d1221",
-            borderColor: "rgba(255,255,255,0.1)",
-            color: "#4a5d78",
-          }}
-        >
-          {collapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
-        </motion.button>
+
       </motion.aside>
 
-      {/* Main area */}
+      {/* Area principal */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Header */}
         <header
@@ -264,12 +281,12 @@ export default function Layout() {
             borderBottom: "1px solid rgba(255,255,255,0.05)",
           }}
         >
-          {/* Page indicator */}
+          {/* Nome da pagina atual */}
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            {currentItem && (
+            {pageColors[location.pathname] && (
               <div
                 className="w-1 h-6 rounded-full flex-shrink-0"
-                style={{ background: currentItem.color }}
+                style={{ background: pageColors[location.pathname] }}
               />
             )}
             <div className="min-w-0">
@@ -282,20 +299,17 @@ export default function Layout() {
                   fontWeight: 600,
                   fontSize: "1.05rem",
                   color: "#e8edf5",
-                  lineHeight: 1.2,
+                  lineHeight: 12,
                 }}
               >
                 {currentTitle}
               </motion.h2>
-              <p style={{ color: "#4a5d78", fontSize: "0.72rem", fontFamily: "'Space Grotesk', sans-serif" }}>
-                Sistema de Gerenciamento
-              </p>
             </div>
           </div>
 
-          {/* Right controls */}
+          {/* Botões da direita*/}
           <div className="flex items-center gap-3">
-            {/* Live clock */}
+            {/* relogio */}
             <div
               className="px-3 py-1.5 rounded-lg flex items-center gap-2"
               style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
@@ -307,7 +321,7 @@ export default function Layout() {
               <span
                 style={{
                   fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: "0.78rem",
+                  fontSize: "0.9rem",
                   color: "#c8d6e8",
                   letterSpacing: "0.04em",
                 }}
@@ -316,12 +330,12 @@ export default function Layout() {
               </span>
             </div>
 
-            {/* Date */}
-            <span style={{ color: "#4a5d78", fontSize: "0.78rem", fontFamily: "'Space Grotesk', sans-serif" }}>
+            {/* Data */}
+            <span style={{ color: "#4a5d78", fontSize: "0.9rem", fontFamily: "'Space Grotesk', sans-serif" }}>
               {formatDate(time)}
             </span>
 
-            {/* Search */}
+            {/* Search 
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -330,8 +344,8 @@ export default function Layout() {
             >
               <Search className="w-4 h-4" />
             </motion.button>
-
-            {/* Notifications */}
+*/}
+            {/* Notifications 
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -344,14 +358,16 @@ export default function Layout() {
                 style={{ background: "#f97316", borderColor: "#07090e" }}
               />
             </motion.button>
+            */}
+            
           </div>
         </header>
-
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-6 flex justify-center">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
+              className="w-full max-w-7xl"
               initial={{ opacity: 0, y: 16, filter: "blur(4px)" }}
               animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
               exit={{ opacity: 0, y: -10, filter: "blur(4px)" }}

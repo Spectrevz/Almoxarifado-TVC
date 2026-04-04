@@ -55,6 +55,7 @@ CREATE TABLE kits (
 id SERIAL PRIMARY KEY,
 nome VARCHAR(100) NOT NULL,
 descricao TEXT
+usando BOOLEAN DEFAULT FALSE,
 );
 ```
 
@@ -104,6 +105,7 @@ movimentacao_id INTEGER NOT NULL,
 kit_item_id INTEGER NOT NULL,
 
 inventario_id INTEGER NOT NULL,
+
 
 FOREIGN KEY (movimentacao_id) REFERENCES movimentacoes(id) ON DELETE CASCADE,
 FOREIGN KEY (kit_item_id) REFERENCES kit_itens(id),

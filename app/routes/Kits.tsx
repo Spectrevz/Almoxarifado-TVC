@@ -85,7 +85,6 @@ export default function Kits() {
     { label: "Total de Kits", value: kits.length, color: "#3b82f6", icon: Package },
     { label: "Disponíveis", value: kits.filter(k => k.status === "disponível").length, color: "#22c55e", icon: CheckCircle2 },
     { label: "Em Uso", value: kits.filter(k => k.status === "em uso").length, color: "#f97316", icon: Clock },
-    { label: "Mais usado", value: `${Math.max(...kits.map(k => k.usageCount))}x`, color: "#a855f7", icon: Zap },
   ];
 
   return (
@@ -96,20 +95,6 @@ export default function Kits() {
         animate={{ opacity: 1, y: 0 }}
         className="flex items-start justify-between"
       >
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-2 h-2 rounded-full" style={{ background: "#a855f7" }} />
-            <span style={{ color: "#a855f7", fontSize: "0.7rem", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-              Kits
-            </span>
-          </div>
-          <h1 style={{ color: "#e8edf5", fontSize: "1.6rem", fontWeight: 700, fontFamily: "'Space Grotesk', sans-serif", letterSpacing: "-0.025em" }}>
-            Conjuntos de Equipamentos
-          </h1>
-          <p style={{ color: "#4a5d78", fontSize: "0.82rem", fontFamily: "'Space Grotesk', sans-serif" }}>
-            Pré-configurações de equipamentos para diferentes produções
-          </p>
-        </div>
         <motion.button
           whileHover={{ scale: 1.04 }}
           whileTap={{ scale: 0.96 }}
@@ -126,7 +111,7 @@ export default function Kits() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="grid grid-cols-2 lg:grid-cols-4 gap-3"
+        className="grid grid-cols-2 lg:grid-cols-3 gap-3"
       >
         {summaryStats.map((stat, index) => (
           <motion.div
@@ -274,19 +259,6 @@ export default function Kits() {
                         {kit.description}
                       </p>
                     </div>
-
-                    {/* Usage counter */}
-                    <div
-                      className="flex-shrink-0 text-center px-3 py-2 rounded-xl"
-                      style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", minWidth: 60 }}
-                    >
-                      <p style={{ color: "#e8edf5", fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: "1.3rem", lineHeight: 1 }}>
-                        {kit.usageCount}
-                      </p>
-                      <p style={{ color: "#4a5d78", fontSize: "0.6rem", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 500, marginTop: 2 }}>
-                        USOS
-                      </p>
-                    </div>
                   </div>
 
                   {/* Last used */}
@@ -301,67 +273,8 @@ export default function Kits() {
                 {/* Divider */}
                 <div className="mx-5 h-px" style={{ background: "rgba(255,255,255,0.05)" }} />
 
-                {/* Items list */}
-                <div className="p-5 pt-4">
-                  <p style={{ color: "#4a5d78", fontSize: "0.68rem", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 12 }}>
-                    Conteúdo do Kit · {kit.items.length} tipos
-                  </p>
-                  <div className="space-y-2 mb-5">
-                    {kit.items.map((item, itemIndex) => (
-                      <motion.div
-                        key={itemIndex}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.3 + index * 0.07 + itemIndex * 0.05 }}
-                        className="flex items-center gap-3 p-2.5 rounded-xl"
-                        style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.04)" }}
-                      >
-                        <div
-                          className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                          style={{ background: `${item.color}15` }}
-                        >
-                          <item.icon className="w-3.5 h-3.5" style={{ color: item.color }} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="truncate" style={{ color: "#c8d6e8", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 500, fontSize: "0.82rem" }}>
-                            {item.name}
-                          </p>
-                        </div>
-                        <div
-                          className="flex items-center gap-1 px-2 py-0.5 rounded-lg flex-shrink-0"
-                          style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.15)" }}
-                        >
-                          <CheckCircle2 className="w-3 h-3" style={{ color: "#22c55e" }} />
-                          <span style={{ color: "#22c55e", fontSize: "0.7rem", fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>
-                            ×{item.quantity}
-                          </span>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-
-                  {/* Usage bar */}
-                  <div className="mb-5">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span style={{ color: "#4a5d78", fontSize: "0.7rem", fontFamily: "'Space Grotesk', sans-serif" }}>
-                        Taxa de utilização histórica
-                      </span>
-                      <span style={{ color: "#a855f7", fontSize: "0.72rem", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>
-                        {Math.min(Math.round((kit.usageCount / 70) * 100), 100)}%
-                      </span>
-                    </div>
-                    <div className="h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.06)" }}>
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${Math.min((kit.usageCount / 70) * 100, 100)}%` }}
-                        transition={{ delay: 0.5 + index * 0.07, duration: 0.8, ease: "easeOut" }}
-                        className="h-full rounded-full"
-                        style={{ background: "linear-gradient(90deg, #a855f780, #a855f7)" }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Actions */}
+                {/* Actions */}
+                <div className="p-5">
                   <div className="flex gap-2">
                     <button
                       className="flex items-center gap-2 flex-1 justify-center py-2.5 rounded-xl transition-colors hover:bg-white/5"
@@ -385,7 +298,7 @@ export default function Kits() {
                         cursor: isInUse ? "not-allowed" : "pointer",
                       }}
                     >
-                      {isInUse ? "Em Uso" : "Retirar Kit"}
+                      {isInUse ? "Em Uso" : "Editar Kit"}
                     </motion.button>
                   </div>
                 </div>

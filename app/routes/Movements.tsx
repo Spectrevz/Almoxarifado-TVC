@@ -1,20 +1,74 @@
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
 import {
   Search,
   Plus,
   ArrowUpRight,
   ArrowDownLeft,
-  AlertTriangle,
-  User,
   Calendar,
   Package,
-  Clock,
   CheckCircle2,
   Filter,
 } from "lucide-react";
 
-const movements = [
+type MovementType = "saída" | "entrada";
+type MovementStatus = "ativa" | "concluída";
+
+type Movement = {
+  id: number;
+  type: MovementType;
+  item: string;
+  user: string;
+  userInitials: string;
+  userColor: string;
+  date: string;
+  time: string;
+  status: MovementStatus;
+  returnDate: string | null;
+  note: string | null;
+};
+
+type KitTemplateItem = {
+  id: string;
+  name: string;
+  defaultQuantity: number;
+};
+
+type KitTemplate = {
+  id: string;
+  name: string;
+  items: KitTemplateItem[];
+};
+
+type MovementEquipmentRow = {
+  equipmentId: string;
+  equipmentName: string;
+  quantityInput: string;
+  units: Array<{
+    patrimonio: string;
+    note: string;
+  }>;
+};
+
+type MovementFormData = {
+  selectedKitId: string;
+  viatura: string;
+  operadorAudio: string;
+  auxUpe: string;
+  opCamera: string;
+  responsavelExpedicao: string;
+  note: string;
+};
+
+const initialMovements: Movement[] = [
   {
     id: 1,
     type: "saída",
@@ -76,7 +130,7 @@ const movements = [
     userColor: "#ef4444",
     date: "2026-04-02",
     time: "16:20",
-    status: "atrasada",
+    status: "ativa",
     returnDate: "2026-04-02",
     note: "Documental Parque Estadual",
   },
@@ -108,6 +162,66 @@ const movements = [
   },
 ];
 
+const kitTemplates: KitTemplate[] = [
+  {
+    id: "kit-reportagem",
+    name: "Kit Reportagem Externa",
+    items: [
+      { id: "cam-a7", name: "Câmera Sony A7 III", defaultQuantity: 1 },
+      { id: "bat-vmount", name: "Bateria V-Mount 150Wh", defaultQuantity: 2 },
+      { id: "mic-shotgun", name: "Microfone Shotgun", defaultQuantity: 1 },
+    ],
+  },
+  {
+    id: "kit-iluminacao",
+    name: "Kit Iluminação LED Arri",
+    items: [
+      { id: "led-arri", name: "Painel LED Arri", defaultQuantity: 2 },
+      { id: "tripes-luz", name: "Tripé de iluminação", defaultQuantity: 2 },
+      { id: "cabos-xlr", name: "Cabos XLR", defaultQuantity: 4 },
+    ],
+  },
+  {
+    id: "kit-documentario",
+    name: "Kit Documentário Completo",
+    items: [
+      { id: "cam-c300", name: "Canon C300 Mark III", defaultQuantity: 1 },
+      { id: "bat-npf", name: "Bateria NP-F970", defaultQuantity: 4 },
+      { id: "lentes-kit", name: "Kit de lentes", defaultQuantity: 1 },
+    ],
+  },
+];
+
+const userPalette = ["#f97316", "#3b82f6", "#a855f7", "#22c55e", "#ef4444", "#f59e0b", "#06b6d4"];
+
+function getUserInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) {
+    return "??";
+  }
+
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+function getDefaultFormData(): MovementFormData {
+  return {
+    selectedKitId: "",
+    viatura: "",
+    operadorAudio: "",
+    auxUpe: "",
+    opCamera: "",
+    responsavelExpedicao: "",
+    note: "",
+  };
+}
+
+function createUnits(quantity: number) {
+  return Array.from({ length: quantity }, () => ({ patrimonio: "", note: "" }));
+}
+
 const typeConfig = {
   saída: {
     label: "Saída",
@@ -130,48 +244,206 @@ const typeConfig = {
 const statusConfig = {
   ativa: { label: "Ativa", color: "#3b82f6", bg: "rgba(59,130,246,0.1)", border: "rgba(59,130,246,0.25)", pulse: true },
   concluída: { label: "Concluída", color: "#22c55e", bg: "rgba(34,197,94,0.1)", border: "rgba(34,197,94,0.2)", pulse: false },
-  atrasada: { label: "Atrasada", color: "#ef4444", bg: "rgba(239,68,68,0.1)", border: "rgba(239,68,68,0.25)", pulse: true },
 };
 
 const TABS = [
-  { value: "todas", label: "Todas" },
-  { value: "saídas", label: "Saídas" },
-  { value: "entradas", label: "Entradas" },
-  { value: "ativas", label: "Ativas" },
-  { value: "atrasadas", label: "Atrasadas" },
+  { value: "historico", label: "Histórico Completo" },
+  { value: "saidas", label: "Todas Saídas" },
+  { value: "devolucao", label: "Todas Devoluções" },
+  { value: "fora", label: "Kits Fora" },
+
 ];
 
 export default function Movements() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("todas");
+  const [activeTab, setActiveTab] = useState("historico");
+  const [movementRecords, setMovementRecords] = useState<Movement[]>(initialMovements);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [formData, setFormData] = useState<MovementFormData>(getDefaultFormData);
+  const [equipmentRows, setEquipmentRows] = useState<MovementEquipmentRow[]>([]);
 
-  const filteredMovements = movements.filter((m) => {
+  const handleCreateDialogChange = (open: boolean) => {
+    setIsCreateDialogOpen(open);
+    if (!open) {
+      setFormData(getDefaultFormData());
+      setEquipmentRows([]);
+    }
+  };
+
+  const handleFormChange = <K extends keyof MovementFormData>(field: K, value: MovementFormData[K]) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleKitChange = (kitId: string) => {
+    handleFormChange("selectedKitId", kitId);
+
+    const selectedKit = kitTemplates.find((kit) => kit.id === kitId);
+    if (!selectedKit) {
+      setEquipmentRows([]);
+      return;
+    }
+
+    setEquipmentRows(
+      selectedKit.items.map((item) => ({
+        equipmentId: item.id,
+        equipmentName: item.name,
+        quantityInput: String(item.defaultQuantity),
+        units: createUnits(item.defaultQuantity),
+      })),
+    );
+  };
+
+  const handleEquipmentQuantityChange = (equipmentId: string, value: string) => {
+    const sanitized = value.replace(/[^0-9]/g, "");
+
+    setEquipmentRows((prev) =>
+      prev.map((row) => {
+        if (row.equipmentId !== equipmentId) {
+          return row;
+        }
+
+        const quantity = sanitized === "" ? 0 : Number(sanitized);
+        const currentUnits = row.units;
+        const nextUnits = quantity <= currentUnits.length
+          ? currentUnits.slice(0, quantity)
+          : [...currentUnits, ...createUnits(quantity - currentUnits.length)];
+
+        return {
+          ...row,
+          quantityInput: sanitized,
+          units: nextUnits,
+        };
+      }),
+    );
+  };
+
+  const handleEquipmentUnitChange = (
+    equipmentId: string,
+    unitIndex: number,
+    field: "patrimonio" | "note",
+    value: string,
+  ) => {
+    setEquipmentRows((prev) =>
+      prev.map((row) =>
+        row.equipmentId === equipmentId
+          ? {
+              ...row,
+              units: row.units.map((unit, index) =>
+                index === unitIndex ? { ...unit, [field]: value } : unit,
+              ),
+            }
+          : row,
+      ),
+    );
+  };
+
+  const handleCreateMovement = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const now = new Date();
+    const createdDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    const createdTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const nextId = movementRecords.reduce((maxId, item) => Math.max(maxId, item.id), 0) + 1;
+    const selectedKit = kitTemplates.find((kit) => kit.id === formData.selectedKitId);
+    const normalizedNote = formData.note.trim();
+    const equipmentDetails = equipmentRows
+      .map((row) => {
+        const quantity = row.quantityInput === "" ? 0 : Number(row.quantityInput);
+        if (quantity <= 0) {
+          return "";
+        }
+
+        const unitDetails = row.units
+          .map((unit, index) => {
+            const unitParts = [`#${index + 1}`];
+            if (unit.patrimonio.trim()) {
+              unitParts.push(`PAT: ${unit.patrimonio.trim()}`);
+            }
+            if (unit.note.trim()) {
+              unitParts.push(`Obs: ${unit.note.trim()}`);
+            }
+
+            return unitParts.join(" | ");
+          })
+          .join(" ; ");
+
+        const parts = [`${row.equipmentName} x${quantity}`];
+        if (unitDetails) {
+          parts.push(unitDetails);
+        }
+
+        return parts.join(" | ");
+      })
+      .filter(Boolean)
+      .join(" || ");
+
+    const notes = [
+      formData.viatura.trim() ? `Viatura: ${formData.viatura.trim()}` : "",
+      formData.operadorAudio.trim() ? `Operador de audio: ${formData.operadorAudio.trim()}` : "",
+      formData.auxUpe.trim() ? `Aux. U.P.E: ${formData.auxUpe.trim()}` : "",
+      formData.opCamera.trim() ? `Op. camera: ${formData.opCamera.trim()}` : "",
+      equipmentDetails ? `Itens: ${equipmentDetails}` : "",
+      normalizedNote,
+    ]
+      .filter(Boolean)
+      .join(" • ");
+
+    const newMovement: Movement = {
+      id: nextId,
+      type: "saída",
+      item: selectedKit?.name ?? "Movimentação sem kit",
+      user: formData.responsavelExpedicao.trim(),
+      userInitials: getUserInitials(formData.responsavelExpedicao),
+      userColor: userPalette[nextId % userPalette.length],
+      date: createdDate,
+      time: createdTime,
+      status: "ativa",
+      returnDate: null,
+      note: notes || null,
+    };
+
+    setMovementRecords((prev) => [newMovement, ...prev]);
+    setIsCreateDialogOpen(false);
+    setFormData(getDefaultFormData());
+    setEquipmentRows([]);
+    setActiveTab("historico");
+  };
+
+  const handleReturnMovement = (movementId: number) => {
+    const now = new Date();
+    const returnDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+
+    setMovementRecords((prev) =>
+      prev.map((movement) =>
+        movement.id === movementId
+          ? {
+              ...movement,
+              status: "concluída",
+              returnDate,
+            }
+          : movement,
+      ),
+    );
+  };
+
+  const filteredMovements = movementRecords.filter((m) => {
     const matchesSearch =
       m.item.toLowerCase().includes(searchQuery.toLowerCase()) ||
       m.user.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesTab =
-      activeTab === "todas" ||
-      (activeTab === "saídas" && m.type === "saída") ||
-      (activeTab === "entradas" && m.type === "entrada") ||
-      (activeTab === "ativas" && m.status === "ativa") ||
-      (activeTab === "atrasadas" && m.status === "atrasada");
+      activeTab === "historico" ||
+      (activeTab === "saidas" && m.type === "saída" && m.status === "concluída") ||
+      (activeTab === "devolucao" && m.type === "entrada") ||
+      (activeTab === "fora" && m.type === "saída" && m.status !== "concluída");
     return matchesSearch && matchesTab;
   });
 
   const tabCounts: Record<string, number> = {
-    todas: movements.length,
-    saídas: movements.filter(m => m.type === "saída").length,
-    entradas: movements.filter(m => m.type === "entrada").length,
-    ativas: movements.filter(m => m.status === "ativa").length,
-    atrasadas: movements.filter(m => m.status === "atrasada").length,
+    historico: movementRecords.length,
+    saidas: movementRecords.filter((m) => m.type === "saída" && m.status === "concluída").length,
+    devolucao: movementRecords.filter((m) => m.type === "entrada").length,
+    fora: movementRecords.filter((m) => m.type === "saída" && m.status !== "concluída").length,
   };
-
-  const todayStats = [
-    { label: "Saídas Hoje", value: movements.filter(m => m.type === "saída" && m.date === "2026-04-03").length, color: "#f97316", icon: ArrowUpRight },
-    { label: "Entradas Hoje", value: movements.filter(m => m.type === "entrada" && m.date === "2026-04-03").length, color: "#22c55e", icon: ArrowDownLeft },
-    { label: "Em Andamento", value: movements.filter(m => m.status === "ativa").length, color: "#3b82f6", icon: Clock },
-    { label: "Atrasadas", value: movements.filter(m => m.status === "atrasada").length, color: "#ef4444", icon: AlertTriangle },
-  ];
 
   return (
     <div className="space-y-6 max-w-7xl">
@@ -181,23 +453,11 @@ export default function Movements() {
         animate={{ opacity: 1, y: 0 }}
         className="flex items-start justify-between"
       >
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-2 h-2 rounded-full" style={{ background: "#22c55e" }} />
-            <span style={{ color: "#22c55e", fontSize: "0.7rem", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-              Movimentações
-            </span>
-          </div>
-          <h1 style={{ color: "#e8edf5", fontSize: "1.6rem", fontWeight: 700, fontFamily: "'Space Grotesk', sans-serif", letterSpacing: "-0.025em" }}>
-            Entradas & Saídas
-          </h1>
-          <p style={{ color: "#4a5d78", fontSize: "0.82rem", fontFamily: "'Space Grotesk', sans-serif" }}>
-            Registro completo de movimentações de equipamentos
-          </p>
-        </div>
+        
         <motion.button
           whileHover={{ scale: 1.04 }}
           whileTap={{ scale: 0.96 }}
+          onClick={() => setIsCreateDialogOpen(true)}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl"
           style={{ background: "#22c55e", color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.85rem" }}
         >
@@ -205,36 +465,6 @@ export default function Movements() {
           Nova Movimentação
         </motion.button>
       </motion.div>
-
-      {/* Today Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {todayStats.map((stat, index) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 16, scale: 0.94 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ delay: 0.08 + index * 0.07, type: "spring" }}
-            whileHover={{ y: -3 }}
-            className="p-4 rounded-2xl"
-            style={{
-              background: "#0d1221",
-              border: "1px solid rgba(255,255,255,0.06)",
-            }}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <p style={{ color: "#4a5d78", fontSize: "0.7rem", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase" }}>
-                {stat.label}
-              </p>
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${stat.color}15` }}>
-                <stat.icon className="w-3.5 h-3.5" style={{ color: stat.color }} />
-              </div>
-            </div>
-            <p style={{ color: "#e8edf5", fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: "1.6rem", lineHeight: 1 }}>
-              {stat.value}
-            </p>
-          </motion.div>
-        ))}
-      </div>
 
       {/* Search + Tabs */}
       <motion.div
@@ -249,7 +479,7 @@ export default function Movements() {
           <div className="flex-1 relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "#4a5d78" }} />
             <input
-              placeholder="Buscar por item ou colaborador..."
+              placeholder="Buscar por kit ou colaborador..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full rounded-xl pl-10 pr-4 py-2.5 outline-none transition-all"
@@ -314,6 +544,7 @@ export default function Movements() {
               const tc = typeConfig[mv.type as keyof typeof typeConfig];
               const sc = statusConfig[mv.status as keyof typeof statusConfig];
               const TypeIcon = tc.icon;
+              const showOperationalDetails = activeTab !== "historico";
 
               return (
                 <motion.div
@@ -392,39 +623,42 @@ export default function Movements() {
                       </div>
 
                       <div className="flex items-center gap-3 flex-shrink-0">
-                        {mv.returnDate && (
+                        {showOperationalDetails && mv.returnDate && (
                           <div className="text-right hidden sm:block">
                             <p style={{ color: "#4a5d78", fontSize: "0.65rem", fontFamily: "'Space Grotesk', sans-serif", letterSpacing: "0.04em", textTransform: "uppercase" }}>
                               Devolução
                             </p>
-                            <p style={{ color: mv.status === "atrasada" ? "#ef4444" : "#7a8fa8", fontSize: "0.75rem", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>
+                            <p style={{ color: "#7a8fa8", fontSize: "0.75rem", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>
                               {new Date(mv.returnDate).toLocaleDateString("pt-BR")}
                             </p>
                           </div>
                         )}
 
-                        <div
-                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg"
-                          style={{ background: sc.bg, border: `1px solid ${sc.border}` }}
-                        >
-                          {sc.pulse && (
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full ${mv.status === "atrasada" ? "animate-pulse-live" : ""}`}
-                              style={{ background: sc.color }}
-                            />
-                          )}
-                          {mv.status === "concluída" && (
-                            <CheckCircle2 className="w-3 h-3" style={{ color: sc.color }} />
-                          )}
-                          <span style={{ color: sc.color, fontSize: "0.72rem", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600 }}>
-                            {sc.label}
-                          </span>
-                        </div>
+                        {showOperationalDetails && (
+                          <div
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg"
+                            style={{ background: sc.bg, border: `1px solid ${sc.border}` }}
+                          >
+                            {sc.pulse && (
+                              <span
+                                className="w-1.5 h-1.5 rounded-full"
+                                style={{ background: sc.color }}
+                              />
+                            )}
+                            {mv.status === "concluída" && (
+                              <CheckCircle2 className="w-3 h-3" style={{ color: sc.color }} />
+                            )}
+                            <span style={{ color: sc.color, fontSize: "0.72rem", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600 }}>
+                              {sc.label}
+                            </span>
+                          </div>
+                        )}
 
-                        {mv.status === "ativa" && (
+                        {showOperationalDetails && mv.status === "ativa" && (
                           <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
+                            onClick={() => handleReturnMovement(mv.id)}
                             className="px-3 py-1.5 rounded-lg transition-all"
                             style={{
                               background: "rgba(34,197,94,0.1)",
@@ -465,6 +699,191 @@ export default function Movements() {
           )}
         </div>
       </motion.div>
+
+      <Dialog open={isCreateDialogOpen} onOpenChange={handleCreateDialogChange}>
+        <DialogContent
+          className="sm:max-w-2xl max-h-[88vh] overflow-y-auto overscroll-contain touch-pan-y"
+          onInteractOutside={(event) => event.preventDefault()}
+          style={{
+            background: "#0d1221",
+            border: "1px solid rgba(255,255,255,0.09)",
+            color: "#c8d6e8",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle style={{ color: "#e8edf5", fontFamily: "'Space Grotesk', sans-serif" }}>
+              Criar Movimentação
+            </DialogTitle>
+            <DialogDescription style={{ color: "#7a8fa8", fontFamily: "'Space Grotesk', sans-serif" }}>
+              Preencha os dados da folha de saída/entrada. A integração com backend você conecta depois.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateMovement} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <label className="space-y-1.5">
+                <span style={{ fontSize: "0.75rem", color: "#7a8fa8", fontFamily: "'Space Grotesk', sans-serif" }}>Viatura</span>
+                <input
+                  value={formData.viatura}
+                  onChange={(event) => handleFormChange("viatura", event.target.value)}
+                  placeholder="Ex: 210"
+                  className="w-full rounded-xl px-3 py-2.5 outline-none"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", color: "#c8d6e8" }}
+                />
+              </label>
+
+              <label className="space-y-1.5 md:col-span-2">
+                <span style={{ fontSize: "0.75rem", color: "#7a8fa8", fontFamily: "'Space Grotesk', sans-serif" }}>Kit</span>
+                <select
+                  required
+                  value={formData.selectedKitId}
+                  onChange={(event) => handleKitChange(event.target.value)}
+                  className="w-full rounded-xl px-3 py-2.5 outline-none"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", color: "#c8d6e8" }}
+                >
+                  <option value="">Selecione um kit</option>
+                  {kitTemplates.map((kit) => (
+                    <option key={kit.id} value={kit.id}>
+                      {kit.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {equipmentRows.length > 0 && (
+                <div className="md:col-span-2 space-y-2 rounded-xl p-3" style={{ border: "1px solid rgba(255,255,255,0.09)", background: "rgba(255,255,255,0.02)" }}>
+                  <p style={{ color: "#7a8fa8", fontSize: "0.75rem", fontFamily: "'Space Grotesk', sans-serif" }}>
+                    Equipamentos do kit (campos editáveis)
+                  </p>
+
+                  {equipmentRows.map((row) => (
+                    <div key={row.equipmentId} className="space-y-2">
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
+                        <div className="md:col-span-7 rounded-lg px-3 py-2.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "#c8d6e8", fontSize: "0.83rem", fontFamily: "'Space Grotesk', sans-serif" }}>
+                          {row.equipmentName}
+                        </div>
+
+                        <input
+                          value={row.quantityInput}
+                          inputMode="numeric"
+                          onChange={(event) => handleEquipmentQuantityChange(row.equipmentId, event.target.value)}
+                          placeholder="Qtd"
+                          className="md:col-span-5 rounded-lg px-3 py-2.5 outline-none"
+                          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", color: "#c8d6e8" }}
+                        />
+                      </div>
+
+                      {row.units.length > 0 && (
+                        <div className="space-y-2 pl-2 border-l" style={{ borderColor: "rgba(255,255,255,0.1)" }}>
+                          {row.units.map((unit, index) => (
+                            <div key={`${row.equipmentId}-${index}`} className="grid grid-cols-1 md:grid-cols-12 gap-2">
+                              <div className="md:col-span-2 rounded-lg px-3 py-2.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "#7a8fa8", fontSize: "0.75rem", fontFamily: "'JetBrains Mono', monospace" }}>
+                                Unidade {index + 1}
+                              </div>
+
+                              <input
+                                value={unit.patrimonio}
+                                onChange={(event) => handleEquipmentUnitChange(row.equipmentId, index, "patrimonio", event.target.value)}
+                                placeholder="Patrimônio"
+                                className="md:col-span-4 rounded-lg px-3 py-2.5 outline-none"
+                                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", color: "#c8d6e8" }}
+                              />
+
+                              <input
+                                value={unit.note}
+                                onChange={(event) => handleEquipmentUnitChange(row.equipmentId, index, "note", event.target.value)}
+                                placeholder="Observação do item"
+                                className="md:col-span-6 rounded-lg px-3 py-2.5 outline-none"
+                                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", color: "#c8d6e8" }}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <label className="space-y-1.5">
+                <span style={{ fontSize: "0.75rem", color: "#7a8fa8", fontFamily: "'Space Grotesk', sans-serif" }}>Operador de audio</span>
+                <input
+                  value={formData.operadorAudio}
+                  onChange={(event) => handleFormChange("operadorAudio", event.target.value)}
+                  placeholder="Nome do operador de audio"
+                  className="w-full rounded-xl px-3 py-2.5 outline-none"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", color: "#c8d6e8" }}
+                />
+              </label>
+
+              <label className="space-y-1.5">
+                <span style={{ fontSize: "0.75rem", color: "#7a8fa8", fontFamily: "'Space Grotesk', sans-serif" }}>Aux. U.P.E</span>
+                <input
+                  value={formData.auxUpe}
+                  onChange={(event) => handleFormChange("auxUpe", event.target.value)}
+                  placeholder="Nome do auxiliar"
+                  className="w-full rounded-xl px-3 py-2.5 outline-none"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", color: "#c8d6e8" }}
+                />
+              </label>
+
+              <label className="space-y-1.5">
+                <span style={{ fontSize: "0.75rem", color: "#7a8fa8", fontFamily: "'Space Grotesk', sans-serif" }}>Op. camera</span>
+                <input
+                  value={formData.opCamera}
+                  onChange={(event) => handleFormChange("opCamera", event.target.value)}
+                  placeholder="Nome do operador de camera"
+                  className="w-full rounded-xl px-3 py-2.5 outline-none"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", color: "#c8d6e8" }}
+                />
+              </label>
+
+              <label className="space-y-1.5">
+                <span style={{ fontSize: "0.75rem", color: "#7a8fa8", fontFamily: "'Space Grotesk', sans-serif" }}>Responsavel de expedicao</span>
+                <input
+                  required
+                  value={formData.responsavelExpedicao}
+                  onChange={(event) => handleFormChange("responsavelExpedicao", event.target.value)}
+                  placeholder="Nome do responsavel"
+                  className="w-full rounded-xl px-3 py-2.5 outline-none"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", color: "#c8d6e8" }}
+                />
+              </label>
+
+              <label className="space-y-1.5 md:col-span-2">
+                <span style={{ fontSize: "0.75rem", color: "#7a8fa8", fontFamily: "'Space Grotesk', sans-serif" }}>Observação</span>
+                <textarea
+                  rows={3}
+                  value={formData.note}
+                  onChange={(event) => handleFormChange("note", event.target.value)}
+                  placeholder="Ex: Cobertura jornal ao vivo"
+                  className="w-full rounded-xl px-3 py-2.5 outline-none resize-y"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", color: "#c8d6e8" }}
+                />
+              </label>
+            </div>
+
+            <DialogFooter>
+              <button
+                type="button"
+                onClick={() => setIsCreateDialogOpen(false)}
+                className="px-4 py-2.5 rounded-xl"
+                style={{ border: "1px solid rgba(255,255,255,0.1)", color: "#7a8fa8", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.85rem" }}
+              >
+                Cancelar e fechar
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2.5 rounded-xl"
+                style={{ background: "#22c55e", color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.85rem" }}
+              >
+                Salvar movimentação
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
