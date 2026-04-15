@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Dialog,
@@ -17,6 +17,7 @@ import {
   Package,
   CheckCircle2,
   Filter,
+  Info,
 } from "lucide-react";
 
 type MovementType = "saída" | "entrada";
@@ -27,7 +28,6 @@ type Movement = {
   type: MovementType;
   item: string;
   user: string;
-  userInitials: string;
   userColor: string;
   date: string;
   time: string;
@@ -74,7 +74,6 @@ const initialMovements: Movement[] = [
     type: "saída",
     item: "Kit Reportagem Externa",
     user: "João Silva",
-    userInitials: "JS",
     userColor: "#f97316",
     date: "2026-04-03",
     time: "14:30",
@@ -87,7 +86,6 @@ const initialMovements: Movement[] = [
     type: "entrada",
     item: "Bateria V-Mount 150Wh (×3)",
     user: "Maria Santos",
-    userInitials: "MS",
     userColor: "#3b82f6",
     date: "2026-04-03",
     time: "13:15",
@@ -100,7 +98,6 @@ const initialMovements: Movement[] = [
     type: "saída",
     item: "Kit Iluminação LED Arri",
     user: "Pedro Costa",
-    userInitials: "PC",
     userColor: "#a855f7",
     date: "2026-04-03",
     time: "11:00",
@@ -113,7 +110,6 @@ const initialMovements: Movement[] = [
     type: "entrada",
     item: "Microfone Shotgun Rode NTG3",
     user: "Ana Paula",
-    userInitials: "AP",
     userColor: "#22c55e",
     date: "2026-04-03",
     time: "10:45",
@@ -126,7 +122,6 @@ const initialMovements: Movement[] = [
     type: "saída",
     item: "Sony A7 III + 3 Lentes",
     user: "Carlos Mendes",
-    userInitials: "CM",
     userColor: "#ef4444",
     date: "2026-04-02",
     time: "16:20",
@@ -139,7 +134,6 @@ const initialMovements: Movement[] = [
     type: "entrada",
     item: "Kit Documentário Completo",
     user: "Beatriz Lima",
-    userInitials: "BL",
     userColor: "#f59e0b",
     date: "2026-04-02",
     time: "15:00",
@@ -152,7 +146,6 @@ const initialMovements: Movement[] = [
     type: "saída",
     item: "Canon C300 Mark III",
     user: "Rafael Oliveira",
-    userInitials: "RO",
     userColor: "#06b6d4",
     date: "2026-04-01",
     time: "09:00",
@@ -194,18 +187,6 @@ const kitTemplates: KitTemplate[] = [
 
 const userPalette = ["#f97316", "#3b82f6", "#a855f7", "#22c55e", "#ef4444", "#f59e0b", "#06b6d4"];
 
-function getUserInitials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) {
-    return "??";
-  }
-
-  return parts
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
-}
-
 function getDefaultFormData(): MovementFormData {
   return {
     selectedKitId: "",
@@ -222,12 +203,44 @@ function createUnits(quantity: number) {
   return Array.from({ length: quantity }, () => ({ patrimonio: "", note: "" }));
 }
 
+// Função para buscar movimentos da API
+async function fetchMovements(tab: string): Promise<Movement[]> {
+  try {
+    const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api/movements';
+    const params = new URLSearchParams();
+
+    if (tab === 'saidas') {
+      params.append('type', 'saída');
+      params.append('status', 'concluída');
+    } else if (tab === 'devolucao') {
+      params.append('type', 'entrada');
+    } else if (tab === 'fora') {
+      params.append('type', 'saída');
+      params.append('status', 'ativa');
+    }
+
+    const response = await fetch(`${apiUrl}?${params.toString()}`);
+    if (!response.ok) {
+      throw new Error('Erro ao buscar movimentos');
+    }
+    const data = await response.json();
+
+    return data.map((movement: any) => ({
+      ...movement,
+      userColor: userPalette[movement.id % userPalette.length],
+    }));
+  } catch (error) {
+    console.error('Erro ao buscar movimentos:', error);
+    return [];
+  }
+}
+
 const typeConfig = {
   saída: {
     label: "Saída",
     icon: ArrowUpRight,
     color: "#f97316",
-    bg: "rgba(249,115,22,0.1)",
+    bg: "rgba(255, 7, 7, 0.1)",
     border: "rgba(249,115,22,0.25)",
     stripe: "#f97316",
   },
@@ -257,10 +270,24 @@ const TABS = [
 export default function Movements() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("historico");
-  const [movementRecords, setMovementRecords] = useState<Movement[]>(initialMovements);
+  const [movementRecords, setMovementRecords] = useState<Movement[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [selectedMovement, setSelectedMovement] = useState<Movement | null>(null);
   const [formData, setFormData] = useState<MovementFormData>(getDefaultFormData);
   const [equipmentRows, setEquipmentRows] = useState<MovementEquipmentRow[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Carregar movimentos quando a aba muda
+  useEffect(() => {
+    const loadMovements = async () => {
+      setLoading(true);
+      const data = await fetchMovements(activeTab);
+      setMovementRecords(data);
+      setLoading(false);
+    };
+    loadMovements();
+  }, [activeTab]);
 
   const handleCreateDialogChange = (open: boolean) => {
     setIsCreateDialogOpen(open);
@@ -393,7 +420,6 @@ export default function Movements() {
       type: "saída",
       item: selectedKit?.name ?? "Movimentação sem kit",
       user: formData.responsavelExpedicao.trim(),
-      userInitials: getUserInitials(formData.responsavelExpedicao),
       userColor: userPalette[nextId % userPalette.length],
       date: createdDate,
       time: createdTime,
@@ -407,6 +433,16 @@ export default function Movements() {
     setFormData(getDefaultFormData());
     setEquipmentRows([]);
     setActiveTab("historico");
+  };
+
+  const openMovementDetails = (movement: Movement) => {
+    setSelectedMovement(movement);
+    setIsDetailsDialogOpen(true);
+  };
+
+  const closeMovementDetails = () => {
+    setIsDetailsDialogOpen(false);
+    setSelectedMovement(null);
   };
 
   const handleReturnMovement = (movementId: number) => {
@@ -430,16 +466,12 @@ export default function Movements() {
     const matchesSearch =
       m.item.toLowerCase().includes(searchQuery.toLowerCase()) ||
       m.user.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTab =
-      activeTab === "historico" ||
-      (activeTab === "saidas" && m.type === "saída" && m.status === "concluída") ||
-      (activeTab === "devolucao" && m.type === "entrada") ||
-      (activeTab === "fora" && m.type === "saída" && m.status !== "concluída");
-    return matchesSearch && matchesTab;
+    return matchesSearch;
   });
 
+  // Como os dados já vêm filtrados da API, tabCounts pode ser calculado baseado nos dados carregados
   const tabCounts: Record<string, number> = {
-    historico: movementRecords.length,
+    historico: movementRecords.length, // Para historico, mostra todos
     saidas: movementRecords.filter((m) => m.type === "saída" && m.status === "concluída").length,
     devolucao: movementRecords.filter((m) => m.type === "entrada").length,
     fora: movementRecords.filter((m) => m.type === "saída" && m.status !== "concluída").length,
@@ -539,8 +571,22 @@ export default function Movements() {
 
         {/* Movements list */}
         <div className="p-4 space-y-2.5">
-          <AnimatePresence>
-            {filteredMovements.map((mv, index) => {
+          {loading ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col items-center justify-center py-16"
+            >
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: "rgba(255,255,255,0.04)" }}>
+                <Package className="w-6 h-6" style={{ color: "#4a5d78" }} />
+              </div>
+              <h3 style={{ color: "#c8d6e8", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.95rem", marginBottom: 5 }}>
+                Carregando movimentos...
+              </h3>
+            </motion.div>
+          ) : (
+            <AnimatePresence>
+              {filteredMovements.map((mv, index) => {
               const tc = typeConfig[mv.type as keyof typeof typeConfig];
               const sc = statusConfig[mv.status as keyof typeof statusConfig];
               const TypeIcon = tc.icon;
@@ -586,21 +632,14 @@ export default function Movements() {
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
+
                       <div className="min-w-0">
                         <p className="truncate" style={{ color: "#e8edf5", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.9rem", marginBottom: 3 }}>
                           {mv.item}
                         </p>
                         <div className="flex items-center gap-3 flex-wrap">
                           <div className="flex items-center gap-1.5">
-                            <div
-                              className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                              style={{ background: `${mv.userColor}20`, border: `1px solid ${mv.userColor}40` }}
-                            >
-                              <span style={{ color: mv.userColor, fontSize: "0.5rem", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700 }}>
-                                {mv.userInitials}
-                              </span>
-                            </div>
                             <span style={{ color: "#7a8fa8", fontSize: "0.78rem", fontFamily: "'Space Grotesk', sans-serif" }}>
                               {mv.user}
                             </span>
@@ -611,14 +650,6 @@ export default function Movements() {
                               {new Date(mv.date).toLocaleDateString("pt-BR")} · {mv.time}
                             </span>
                           </div>
-                          {mv.note && (
-                            <span
-                              className="px-2 py-0.5 rounded-lg"
-                              style={{ background: "rgba(255,255,255,0.04)", color: "#4a5d78", fontSize: "0.7rem", fontFamily: "'Space Grotesk', sans-serif", border: "1px solid rgba(255,255,255,0.06)" }}
-                            >
-                              {mv.note}
-                            </span>
-                          )}
                         </div>
                       </div>
 
@@ -672,15 +703,26 @@ export default function Movements() {
                             Devolver
                           </motion.button>
                         )}
+
+                        <button
+                          type="button"
+                          onClick={() => openMovementDetails(mv)}
+                          className="flex items-center justify-center w-9 h-9 rounded-full transition-colors"
+                          style={{ background: "rgba(255,255,255,0.06)", color: "#c8d6e8", border: "1px solid rgba(255,255,255,0.08)" }}
+                        >
+                          <Info className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   </div>
                 </motion.div>
               );
+
             })}
           </AnimatePresence>
+          )}
 
-          {filteredMovements.length === 0 && (
+          {!loading && filteredMovements.length === 0 && (
             <motion.div
               initial={{ opacity: 0, scale: 0.92 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -882,6 +924,125 @@ export default function Movements() {
               </button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDetailsDialogOpen} onOpenChange={closeMovementDetails}>
+        <DialogContent
+          className="sm:max-w-xl max-h-[80vh] overflow-y-auto overscroll-contain touch-pan-y"
+          style={{
+            background: "#0d1221",
+            border: "1px solid rgba(255,255,255,0.09)",
+            color: "#c8d6e8",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle style={{ color: "#e8edf5", fontFamily: "'Space Grotesk', sans-serif" }}>
+              Detalhes da movimentação
+            </DialogTitle>
+            <DialogDescription style={{ color: "#7a8fa8", fontFamily: "'Space Grotesk', sans-serif" }}>
+              Veja o kit, responsável pela expedição, data, hora e demais informações completas.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedMovement ? (
+            <div className="space-y-4">
+              <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                <p style={{ color: "#7a8fa8", fontSize: "0.75rem", fontFamily: "'Space Grotesk', sans-serif", marginBottom: 8 }}>
+                  Dados principais
+                </p>
+
+                <div className="space-y-3">
+                  <div>
+                    <p style={{ color: "#c8d6e8", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, marginBottom: 4 }}>
+                      Kit
+                    </p>
+                    <p style={{ color: "#e8edf5", fontFamily: "'Space Grotesk', sans-serif" }}>
+                      {selectedMovement.item}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p style={{ color: "#c8d6e8", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, marginBottom: 4 }}>
+                      Responsável pela expedição
+                    </p>
+                    <p style={{ color: "#e8edf5", fontFamily: "'Space Grotesk', sans-serif" }}>
+                      {selectedMovement.user}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p style={{ color: "#c8d6e8", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, marginBottom: 4 }}>
+                      Data e hora
+                    </p>
+                    <p style={{ color: "#e8edf5", fontFamily: "'Space Grotesk', sans-serif" }}>
+                      {new Date(selectedMovement.date).toLocaleDateString("pt-BR")} · {selectedMovement.time}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                <p style={{ color: "#7a8fa8", fontSize: "0.75rem", fontFamily: "'Space Grotesk', sans-serif", marginBottom: 8 }}>
+                  Informações adicionais
+                </p>
+
+                <div className="space-y-3">
+                  <div>
+                    <p style={{ color: "#c8d6e8", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, marginBottom: 4 }}>
+                      Tipo
+                    </p>
+                    <p style={{ color: "#e8edf5", fontFamily: "'Space Grotesk', sans-serif" }}>
+                      {selectedMovement.type === "saída" ? "Saída" : "Entrada"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p style={{ color: "#c8d6e8", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, marginBottom: 4 }}>
+                      Status
+                    </p>
+                    <p style={{ color: "#e8edf5", fontFamily: "'Space Grotesk', sans-serif" }}>
+                      {selectedMovement.status === "ativa" ? "Ativa" : "Concluída"}
+                    </p>
+                  </div>
+
+                  {selectedMovement.returnDate && (
+                    <div>
+                      <p style={{ color: "#c8d6e8", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, marginBottom: 4 }}>
+                        Data de devolução
+                      </p>
+                      <p style={{ color: "#e8edf5", fontFamily: "'Space Grotesk', sans-serif" }}>
+                        {new Date(selectedMovement.returnDate).toLocaleDateString("pt-BR")}
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedMovement.note && (
+                    <div>
+                      <p style={{ color: "#c8d6e8", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, marginBottom: 4 }}>
+                        Observação
+                      </p>
+                      <p style={{ color: "#e8edf5", fontFamily: "'Space Grotesk', sans-serif" }}>
+                        {selectedMovement.note}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <button
+              type="button"
+              onClick={closeMovementDetails}
+              className="px-4 py-2.5 rounded-xl"
+              style={{ border: "1px solid rgba(255,255,255,0.1)", color: "#7a8fa8", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.85rem" }}
+            >
+              Fechar
+            </button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
