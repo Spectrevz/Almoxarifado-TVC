@@ -1,0 +1,10 @@
+{
+  "name": "almoxtvc-backend",
+  "private": true,
+  "scripts": {
+    "start:dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}
