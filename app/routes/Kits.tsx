@@ -1,69 +1,141 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Search, Plus, Camera, Battery, Mic, Package, CheckCircle2, Clock, Zap, ChevronRight } from "lucide-react";
+import { Search, Plus, Camera, Battery, Mic, Package, CheckCircle2, Clock, ChevronRight, Wrench } from "lucide-react";
+import { listKits, listMovimentacoes, type ApiKit, type ApiMovimentacao } from "~/lib/api";
 
-const kits = [
-  {
-    id: 1,
-    name: "Kit Reportagem Externa",
-    description: "Kit completo para gravações externas em campo",
-    items: [
-      { name: "Sony A7 III", quantity: 1, icon: Camera, color: "#f97316" },
-      { name: "Bateria V-Mount 150Wh", quantity: 2, icon: Battery, color: "#3b82f6" },
-      { name: "Microfone Shotgun", quantity: 1, icon: Mic, color: "#a855f7" },
-    ],
-    status: "disponível",
-    usageCount: 45,
-    lastUsed: "Há 2 dias",
-    tag: "Externo",
-    tagColor: "#f97316",
-  },
-  {
-    id: 2,
-    name: "Kit Entrevista Studio",
-    description: "Equipamento para entrevistas em estúdio controlado",
-    items: [
-      { name: "Canon C300 Mark III", quantity: 1, icon: Camera, color: "#f97316" },
-      { name: "Bateria NP-F970", quantity: 4, icon: Battery, color: "#3b82f6" },
-      { name: "Lapela Wireless", quantity: 2, icon: Mic, color: "#a855f7" },
-    ],
-    status: "em uso",
-    usageCount: 28,
-    lastUsed: "Agora",
-    tag: "Estúdio",
-    tagColor: "#22c55e",
-  },
-  {
-    id: 3,
-    name: "Kit Documentário",
-    description: "Kit para produções documentais de longa duração",
-    items: [
-      { name: "Sony A7S III", quantity: 2, icon: Camera, color: "#f97316" },
-      { name: "Bateria V-Mount 200Wh", quantity: 4, icon: Battery, color: "#3b82f6" },
-      { name: "Rode NTG3", quantity: 2, icon: Mic, color: "#a855f7" },
-    ],
-    status: "disponível",
-    usageCount: 32,
-    lastUsed: "Há 1 semana",
-    tag: "Documentário",
-    tagColor: "#a855f7",
-  },
-  {
-    id: 4,
-    name: "Kit Jornalismo Rápido",
-    description: "Kit leve para coberturas rápidas e jornalismo ágil",
-    items: [
-      { name: "Câmera Compacta 4K", quantity: 1, icon: Camera, color: "#f97316" },
-      { name: "Bateria Reserva", quantity: 2, icon: Battery, color: "#3b82f6" },
-      { name: "Microfone Portátil", quantity: 1, icon: Mic, color: "#a855f7" },
-    ],
-    status: "disponível",
-    usageCount: 67,
-    lastUsed: "Ontem",
-    tag: "Jornalismo",
-    tagColor: "#f59e0b",
-  },
-];
+type KitStatus = "disponível" | "em uso" | "manutenção";
+
+type KitItemView = {
+  name: string;
+  quantity: number;
+  icon: typeof Package;
+  color: string;
+};
+
+type KitCardView = {
+  id: number;
+  name: string;
+  description: string;
+  items: KitItemView[];
+  status: KitStatus;
+  usageCount: number;
+  lastUsed: string;
+  tag: string;
+  tagColor: string;
+};
+
+function normalizeText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function formatLastUsed(date?: string | null) {
+  if (!date) {
+    return "Sem uso";
+  }
+
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) {
+    return "Sem uso";
+  }
+
+  const now = new Date();
+  const diffMs = now.getTime() - parsed.getTime();
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffDays <= 0) return "Hoje";
+  if (diffDays === 1) return "Ontem";
+  if (diffDays < 7) return `Há ${diffDays} dias`;
+
+  const diffWeeks = Math.floor(diffDays / 7);
+  if (diffWeeks < 5) return `Há ${diffWeeks} semana${diffWeeks > 1 ? "s" : ""}`;
+
+  return parsed.toLocaleDateString("pt-BR");
+}
+
+function getItemVisual(category: string) {
+  const normalized = normalizeText(category);
+
+  if (normalized.includes("camera")) {
+    return { icon: Camera, color: "#f97316" };
+  }
+
+  if (normalized.includes("bateria")) {
+    return { icon: Battery, color: "#3b82f6" };
+  }
+
+  if (normalized.includes("micro")) {
+    return { icon: Mic, color: "#a855f7" };
+  }
+
+  return { icon: Package, color: "#22c55e" };
+}
+
+function resolveKitStatus(kit: ApiKit): KitStatus {
+  if (kit.usando) {
+    return "em uso";
+  }
+
+  const allMaintenance =
+    kit.itens.length > 0 &&
+    kit.itens.every((item) =>
+      item.inventario?.unidades?.length
+        ? item.inventario.unidades.every((unit) => normalizeText(unit.status).includes("manut"))
+        : false,
+    );
+
+  if (allMaintenance) {
+    return "manutenção";
+  }
+
+  return "disponível";
+}
+
+function buildKitCards(kits: ApiKit[], movimentacoes: ApiMovimentacao[]): KitCardView[] {
+  return kits.map((kit) => {
+    const status = resolveKitStatus(kit);
+    const usage = movimentacoes.filter((mov) => mov.kitId === kit.id);
+    const latestUsage = usage
+      .slice()
+      .sort((left, right) => {
+        const leftDate = `${left.dataSaida} ${left.horaSaida ?? "00:00:00"}`;
+        const rightDate = `${right.dataSaida} ${right.horaSaida ?? "00:00:00"}`;
+        return rightDate.localeCompare(leftDate);
+      })[0];
+
+    const items = kit.itens.map((item) => {
+      const visual = getItemVisual(item.inventario?.categoria ?? "");
+
+      return {
+        name: item.inventario?.nome ?? `Inventário ${item.inventarioId}`,
+        quantity: item.quantidade,
+        icon: visual.icon,
+        color: visual.color,
+      };
+    });
+
+    const tagColor =
+      status === "em uso"
+        ? "#f97316"
+        : status === "manutenção"
+          ? "#f59e0b"
+          : "#22c55e";
+
+    return {
+      id: kit.id,
+      name: kit.nome,
+      description: kit.descricao?.trim() || "Sem descrição cadastrada.",
+      items,
+      status,
+      usageCount: usage.length,
+      lastUsed: formatLastUsed(latestUsage?.dataSaida),
+      tag: `Kit ${kit.id}`,
+      tagColor,
+    };
+  });
+}
 
 const statusConfig = {
   "disponível": { label: "Disponível", color: "#22c55e", bg: "rgba(34,197,94,0.1)", border: "rgba(34,197,94,0.25)", dot: true },
@@ -72,19 +144,47 @@ const statusConfig = {
 };
 
 export default function Kits() {
+  const [kits, setKits] = useState<KitCardView[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("todos");
 
-  const filteredKits = kits.filter((kit) => {
-    const matchesSearch = kit.name.toLowerCase().includes(searchQuery.toLowerCase());
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+
+      try {
+        setErrorMessage(null);
+        const [kitData, movementData] = await Promise.all([
+          listKits(),
+          listMovimentacoes(),
+        ]);
+        setKits(buildKitCards(kitData, movementData));
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : "Falha ao carregar kits.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void loadData();
+  }, []);
+
+  const filteredKits = useMemo(() => kits.filter((kit) => {
+    const normalizedSearch = searchQuery.toLowerCase();
+    const matchesSearch =
+      kit.name.toLowerCase().includes(normalizedSearch) ||
+      kit.description.toLowerCase().includes(normalizedSearch);
     const matchesStatus = selectedStatus === "todos" || kit.status === selectedStatus;
     return matchesSearch && matchesStatus;
-  });
+  }), [kits, searchQuery, selectedStatus]);
 
   const summaryStats = [
     { label: "Total de Kits", value: kits.length, color: "#3b82f6", icon: Package },
     { label: "Disponíveis", value: kits.filter(k => k.status === "disponível").length, color: "#22c55e", icon: CheckCircle2 },
     { label: "Em Uso", value: kits.filter(k => k.status === "em uso").length, color: "#f97316", icon: Clock },
+    { label: "Manutenção", value: kits.filter(k => k.status === "manutenção").length, color: "#f59e0b", icon: Wrench },
   ];
 
   return (
@@ -98,20 +198,36 @@ export default function Kits() {
         <motion.button
           whileHover={{ scale: 1.04 }}
           whileTap={{ scale: 0.96 }}
+          disabled
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl"
-          style={{ background: "#a855f7", color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.85rem" }}
+          style={{ background: "#a855f7", color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.85rem", opacity: 0.65 }}
         >
           <Plus className="w-4 h-4" />
-          Criar Kit
+          Criar Kit (em breve)
         </motion.button>
       </motion.div>
+
+      {errorMessage && (
+        <div
+          className="rounded-xl px-4 py-3"
+          style={{
+            background: "rgba(239,68,68,0.08)",
+            border: "1px solid rgba(239,68,68,0.22)",
+            color: "#fca5a5",
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: "0.82rem",
+          }}
+        >
+          {errorMessage}
+        </div>
+      )}
 
       {/* Summary Stats */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="grid grid-cols-2 lg:grid-cols-3 gap-3"
+        className="grid grid-cols-2 lg:grid-cols-4 gap-3"
       >
         {summaryStats.map((stat, index) => (
           <motion.div
@@ -262,16 +378,37 @@ export default function Kits() {
                   </div>
 
                   {/* Last used */}
-                  <div className="flex items-center gap-1.5 mt-3">
-                    <Clock className="w-3 h-3" style={{ color: "#4a5d78" }} />
-                    <span style={{ color: "#4a5d78", fontSize: "0.72rem", fontFamily: "'Space Grotesk', sans-serif" }}>
-                      Último uso: {kit.lastUsed}
+                  <div className="flex items-center justify-between gap-3 mt-3">
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="w-3 h-3" style={{ color: "#4a5d78" }} />
+                      <span style={{ color: "#4a5d78", fontSize: "0.72rem", fontFamily: "'Space Grotesk', sans-serif" }}>
+                        Último uso: {kit.lastUsed}
+                      </span>
+                    </div>
+                    <span style={{ color: "#7a8fa8", fontSize: "0.72rem", fontFamily: "'JetBrains Mono', monospace" }}>
+                      {kit.usageCount} uso(s)
                     </span>
                   </div>
                 </div>
 
                 {/* Divider */}
                 <div className="mx-5 h-px" style={{ background: "rgba(255,255,255,0.05)" }} />
+
+                <div className="px-5 pt-4 space-y-2">
+                  {kit.items.slice(0, 3).map((item) => (
+                    <div key={`${kit.id}-${item.name}`} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <item.icon className="w-3.5 h-3.5 flex-shrink-0" style={{ color: item.color }} />
+                        <span className="truncate" style={{ color: "#c8d6e8", fontFamily: "'Space Grotesk', sans-serif", fontSize: "0.78rem" }}>
+                          {item.name}
+                        </span>
+                      </div>
+                      <span style={{ color: "#7a8fa8", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.75rem" }}>
+                        x{item.quantity}
+                      </span>
+                    </div>
+                  ))}
+                </div>
 
                 {/* Actions */}
                 <div className="p-5">
@@ -308,8 +445,24 @@ export default function Kits() {
         </AnimatePresence>
       </div>
 
+      {isLoading && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.92 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center justify-center py-20 rounded-2xl"
+          style={{ background: "#0d1221", border: "1px solid rgba(255,255,255,0.06)" }}
+        >
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ background: "rgba(168,85,247,0.08)" }}>
+            <Package className="w-7 h-7" style={{ color: "#a855f7" }} />
+          </div>
+          <h3 style={{ color: "#c8d6e8", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "1rem", marginBottom: 6 }}>
+            Carregando kits...
+          </h3>
+        </motion.div>
+      )}
+
       {/* Empty state */}
-      {filteredKits.length === 0 && (
+      {!isLoading && filteredKits.length === 0 && (
         <motion.div
           initial={{ opacity: 0, scale: 0.92 }}
           animate={{ opacity: 1, scale: 1 }}

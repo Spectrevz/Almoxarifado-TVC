@@ -1,4 +1,13 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Inject,
+  Param,
+  Patch,
+  Post,
+} from "@nestjs/common";
 import { IdParamDto } from "../common/dto/id-param.dto";
 import { CreateKitDto } from "./dto/create-kit.dto";
 import { CreateStandaloneKitItemDto } from "./dto/create-kit-item.dto";
@@ -8,7 +17,10 @@ import { KitsService } from "./kits.service";
 
 @Controller("kits")
 export class KitsController {
-  constructor(private readonly kitsService: KitsService) {}
+  constructor(
+    @Inject(KitsService)
+    private readonly kitsService: KitsService,
+  ) {}
 
   @Get()
   findAll() {

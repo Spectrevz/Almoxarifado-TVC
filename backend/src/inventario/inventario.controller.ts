@@ -1,4 +1,13 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Inject,
+  Param,
+  Patch,
+  Post,
+} from "@nestjs/common";
 import { IdParamDto } from "../common/dto/id-param.dto";
 import { CreateInventarioDto } from "./dto/create-inventario.dto";
 import { CreateStandaloneUnidadeInventarioDto } from "./dto/create-unidade-inventario.dto";
@@ -8,7 +17,10 @@ import { InventarioService } from "./inventario.service";
 
 @Controller("inventario")
 export class InventarioController {
-  constructor(private readonly inventarioService: InventarioService) {}
+  constructor(
+    @Inject(InventarioService)
+    private readonly inventarioService: InventarioService,
+  ) {}
 
   @Get()
   findAll() {

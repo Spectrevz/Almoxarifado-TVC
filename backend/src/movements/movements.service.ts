@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { MovimentacoesService } from "../movimentacoes/movimentacoes.service";
 import { MovementsQueryDto } from "./dto/movements-query.dto";
 
@@ -18,6 +18,7 @@ type MovementRow = {
 @Injectable()
 export class MovementsService {
   constructor(
+    @Inject(MovimentacoesService)
     private readonly movimentacoesService: MovimentacoesService,
   ) {}
 

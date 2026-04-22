@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Inject,
   Param,
   Patch,
   Post,
@@ -17,7 +18,10 @@ import { MovimentacoesService } from "./movimentacoes.service";
 
 @Controller("movimentacoes")
 export class MovimentacoesController {
-  constructor(private readonly movimentacoesService: MovimentacoesService) {}
+  constructor(
+    @Inject(MovimentacoesService)
+    private readonly movimentacoesService: MovimentacoesService,
+  ) {}
 
   @Get()
   findAll() {

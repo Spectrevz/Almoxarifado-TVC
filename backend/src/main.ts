@@ -3,12 +3,14 @@ import { resolve } from "node:path";
 import dotenv from "dotenv";
 import { ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
-import { AppModule } from "./app.module";
 
-dotenv.config({ path: resolve(process.cwd(), "../.env") });
-dotenv.config({ path: resolve(process.cwd(), ".env") });
+const backendRoot = resolve(__dirname, "..");
+
+dotenv.config({ path: resolve(backendRoot, "../.env") });
+dotenv.config({ path: resolve(backendRoot, ".env"), override: true });
 
 async function bootstrap() {
+  const { AppModule } = await import("./app.module");
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
