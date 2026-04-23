@@ -10,7 +10,7 @@ dotenv.config({ path: resolve(backendRoot, "../.env") });
 dotenv.config({ path: resolve(backendRoot, ".env"), override: true });
 
 async function bootstrap() {
-  const { AppModule } = await import("./app.module");
+  const { AppModule } = await import("./app.module.js");
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({

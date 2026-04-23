@@ -14,7 +14,7 @@ export class UnidadeInventario {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({ type: "int" })
+  @Column({ type: "int", name: "inventarioid" })
   inventarioId!: number;
 
   @Column({ type: "varchar", length: 100 })
@@ -29,7 +29,7 @@ export class UnidadeInventario {
   @ManyToOne(() => Inventario, (inventario) => inventario.unidades, {
     onDelete: "CASCADE",
   })
-  @JoinColumn({ name: "inventarioId" })
+  @JoinColumn({ name: "inventarioid" })
   inventario!: Inventario;
 
   @OneToMany(

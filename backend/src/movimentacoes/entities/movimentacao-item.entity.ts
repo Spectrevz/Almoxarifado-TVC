@@ -14,29 +14,29 @@ export class MovimentacaoItem {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({ type: "int", name: "mmovimentacaoId" })
+  @Column({ type: "int", name: "mmovimentacaoid" })
   movimentacaoId!: number;
 
-  @Column({ type: "int" })
+  @Column({ type: "int", name: "kititemid" })
   kitItemId!: number;
 
-  @Column({ type: "int" })
+  @Column({ type: "int", name: "unidadeinventarioid" })
   unidadeInventarioId!: number;
 
   @ManyToOne(() => Movimentacao, (movimentacao) => movimentacao.itens, {
     onDelete: "CASCADE",
   })
-  @JoinColumn({ name: "mmovimentacaoId" })
+  @JoinColumn({ name: "mmovimentacaoid" })
   movimentacao!: Movimentacao;
 
   @ManyToOne(() => KitItem, (kitItem) => kitItem.movimentacaoItens)
-  @JoinColumn({ name: "kitItemId" })
+  @JoinColumn({ name: "kititemid" })
   kitItem!: KitItem;
 
   @ManyToOne(
     () => UnidadeInventario,
     (unidadeInventario) => unidadeInventario.movimentacaoItens,
   )
-  @JoinColumn({ name: "unidadeInventarioId" })
+  @JoinColumn({ name: "unidadeinventarioid" })
   unidadeInventario!: UnidadeInventario;
 }

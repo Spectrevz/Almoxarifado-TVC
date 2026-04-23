@@ -14,32 +14,37 @@ export class Movimentacao {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({ type: "int" })
+  @Column({ type: "int", name: "kitid" })
   kitId!: number;
 
-  @Column({ type: "date" })
+  @Column({ type: "date", name: "datasaida" })
   dataSaida!: string;
 
-  @Column({ type: "time", nullable: true })
+  @Column({ type: "time", nullable: true, name: "horasaida" })
   horaSaida?: string | null;
 
-  @Column({ type: "date", nullable: true })
+  @Column({ type: "date", nullable: true, name: "datadevolucao" })
   dataDevolucao?: string | null;
 
-  @Column({ type: "time", nullable: true })
+  @Column({ type: "time", nullable: true, name: "horadevolucao" })
   horaDevolucao?: string | null;
 
-  @Column({ type: "varchar", length: 255, nullable: true })
+  @Column({ type: "varchar", length: 255, nullable: true, name: "responsavelsaida" })
   responsavelSaida?: string | null;
 
-  @Column({ type: "varchar", length: 255, nullable: true })
+  @Column({
+    type: "varchar",
+    length: 255,
+    nullable: true,
+    name: "responsavelretorno",
+  })
   responsavelRetorno?: string | null;
 
   @Column({ type: "varchar", length: 255, nullable: true })
   observacao?: string | null;
 
   @ManyToOne(() => Kit, (kit) => kit.movimentacoes)
-  @JoinColumn({ name: "kitId" })
+  @JoinColumn({ name: "kitid" })
   kit!: Kit;
 
   @OneToMany(

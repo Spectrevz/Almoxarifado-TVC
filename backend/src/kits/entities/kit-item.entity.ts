@@ -15,21 +15,21 @@ export class KitItem {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({ type: "int" })
+  @Column({ type: "int", name: "kitid" })
   kitId!: number;
 
-  @Column({ type: "int" })
+  @Column({ type: "int", name: "inventarioid" })
   inventarioId!: number;
 
   @Column({ type: "int", default: 1 })
   quantidade!: number;
 
   @ManyToOne(() => Kit, (kit) => kit.itens, { onDelete: "CASCADE" })
-  @JoinColumn({ name: "kitId" })
+  @JoinColumn({ name: "kitid" })
   kit!: Kit;
 
   @ManyToOne(() => Inventario, (inventario) => inventario.kitItens)
-  @JoinColumn({ name: "inventarioId" })
+  @JoinColumn({ name: "inventarioid" })
   inventario!: Inventario;
 
   @OneToMany(
