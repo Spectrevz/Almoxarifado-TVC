@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
   Dialog,
@@ -8,6 +8,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
+import {
+  createInventario,
+  createUnidadeInventario,
+  deleteInventario,
+  deleteUnidadeInventario,
+  listInventario,
+  type ApiInventario,
+  updateUnidadeInventario,
+} from "~/lib/api";
 import { Search, Plus, Camera, Battery, Mic, Lightbulb, Package, SlidersHorizontal } from "lucide-react";
 
 const categoryConfig = {
@@ -33,10 +42,12 @@ type InventoryItem = {
   condition: string;
   note: string | null;
   units: Array<{
+    id: number;
     order: number;
     patrimonio: string;
     note: string;
     inMaintenance: boolean;
+    backendStatus: string;
   }>;
 };
 
@@ -51,16 +62,72 @@ type InventoryFormData = {
   }>;
 };
 
-const initialInventoryItems: InventoryItem[] = [
-  { id: 1, name: "Sony A7 III", patrimonio: "PAT-0001", category: "Câmeras", quantity: 12, available: 8, status: "disponível", code: "CAM-001", condition: "Bom", note: null, units: [{ order: 1, patrimonio: "PAT-0001", note: "Principal", inMaintenance: false }] },
-  { id: 2, name: "Bateria V-Mount 150Wh", patrimonio: "PAT-0002", category: "Baterias", quantity: 24, available: 18, status: "disponível", code: "BAT-001", condition: "Bom", note: null, units: [{ order: 1, patrimonio: "PAT-0002", note: "Principal", inMaintenance: false }] },
-  { id: 3, name: "Rode NTG3", patrimonio: "PAT-0003", category: "Microfones", quantity: 8, available: 2, status: "baixo", code: "MIC-001", condition: "Regular", note: null, units: [{ order: 1, patrimonio: "PAT-0003", note: "Principal", inMaintenance: false }] },
-  { id: 4, name: "Canon C300 Mark III", patrimonio: "PAT-0004", category: "Câmeras", quantity: 6, available: 6, status: "disponível", code: "CAM-002", condition: "Excelente", note: null, units: [{ order: 1, patrimonio: "PAT-0004", note: "Principal", inMaintenance: false }] },
-  { id: 5, name: "Sennheiser EW 112P", patrimonio: "PAT-0005", category: "Microfones", quantity: 10, available: 7, status: "disponível", code: "MIC-002", condition: "Bom", note: null, units: [{ order: 1, patrimonio: "PAT-0005", note: "Principal", inMaintenance: false }] },
-  { id: 6, name: "Bateria NP-F970", patrimonio: "PAT-0006", category: "Baterias", quantity: 30, available: 22, status: "disponível", code: "BAT-002", condition: "Bom", note: null, units: [{ order: 1, patrimonio: "PAT-0006", note: "Principal", inMaintenance: false }] },
-  { id: 7, name: "Arri SkyPanel S30", patrimonio: "PAT-0007", category: "Iluminação", quantity: 4, available: 4, status: "disponível", code: "LUZ-001", condition: "Excelente", note: null, units: [{ order: 1, patrimonio: "PAT-0007", note: "Principal", inMaintenance: false }] },
-  { id: 8, name: "Tripé Cartoni Delta", patrimonio: "PAT-0008", category: "Acessórios", quantity: 14, available: 3, status: "baixo", code: "ACE-001", condition: "Regular", note: null, units: [{ order: 1, patrimonio: "PAT-0008", note: "Principal", inMaintenance: false }] },
-];
+function normalizeText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function mapCategory(rawCategory: string): Exclude<InventoryCategory, "Todos"> {
+  const normalized = normalizeText(rawCategory);
+
+  if (normalized.includes("camera")) return "Câmeras";
+  if (normalized.includes("bateria")) return "Baterias";
+  if (normalized.includes("micro")) return "Microfones";
+  if (normalized.includes("ilumin")) return "Iluminação";
+  if (normalized.includes("acessor")) return "Acessórios";
+
+  return "Acessórios";
+}
+
+function isMaintenanceStatus(status: string) {
+  return normalizeText(status).includes("manut");
+}
+
+function buildInventoryCode(category: Exclude<InventoryCategory, "Todos">, id: number) {
+  const categoryPrefix = category
+    .split(" ")
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("")
+    .slice(0, 3);
+
+  return `${categoryPrefix || "EQP"}-${String(id).padStart(3, "0")}`;
+}
+
+function mapApiItem(item: ApiInventario): InventoryItem {
+  const category = mapCategory(item.categoria);
+  const units = (item.unidades ?? []).map((unit, index) => {
+    const maintenance = isMaintenanceStatus(unit.status ?? "");
+
+    return {
+      id: unit.id,
+      order: index + 1,
+      patrimonio: unit.patrimonio,
+      note: unit.observacao ?? "",
+      inMaintenance: maintenance,
+      backendStatus: unit.status ?? "disponivel",
+    };
+  });
+
+  const quantity = units.length;
+  const maintenanceCount = units.filter((unit) => unit.inMaintenance).length;
+  const available = Math.max(0, quantity - maintenanceCount);
+
+  return {
+    id: item.id,
+    name: item.nome,
+    patrimonio: units[0]?.patrimonio ?? "",
+    category,
+    quantity,
+    available,
+    status: available < Math.max(1, quantity / 3) ? "baixo" : "disponível",
+    code: buildInventoryCode(category, item.id),
+    condition: maintenanceCount > 0 ? "Manutenção" : "Bom",
+    note: item.observacao ?? null,
+    units,
+  };
+}
 
 function getDefaultInventoryFormData(): InventoryFormData {
   return {
@@ -81,27 +148,11 @@ function sanitizeIntegerInput(value: string) {
   return value.replace(/[^0-9]/g, "");
 }
 
-function normalizeItemFromUnits(item: InventoryItem, nextUnitsInput: InventoryItem["units"]): InventoryItem {
-  const nextUnits = nextUnitsInput.map((unit, index) => ({ ...unit, order: index + 1 }));
-  const prevMaintenanceCount = item.units.filter((unit) => unit.inMaintenance).length;
-  const persistedOutsideCount = Math.max(0, item.quantity - item.available - prevMaintenanceCount);
-  const quantity = nextUnits.length;
-  const maintenanceCount = nextUnits.filter((unit) => unit.inMaintenance).length;
-  const available = Math.max(0, quantity - maintenanceCount - persistedOutsideCount);
-
-  return {
-    ...item,
-    units: nextUnits,
-    quantity,
-    available,
-    patrimonio: nextUnits[0]?.patrimonio ?? item.patrimonio,
-    status: available < quantity / 3 ? "baixo" : "disponível",
-    condition: maintenanceCount > 0 ? "Manutenção" : "Bom",
-  };
-}
-
 export default function Inventory() {
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>(initialInventoryItems);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [isLoadingInventory, setIsLoadingInventory] = useState(true);
+  const [isMutatingInventory, setIsMutatingInventory] = useState(false);
+  const [inventoryError, setInventoryError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -125,6 +176,44 @@ export default function Inventory() {
   const selectedItem = selectedItemId === null
     ? null
     : inventoryItems.find((item) => item.id === selectedItemId) ?? null;
+
+  const loadInventory = async (withSpinner = true) => {
+    if (withSpinner) {
+      setIsLoadingInventory(true);
+    }
+
+    try {
+      setInventoryError(null);
+      const data = await listInventario();
+      setInventoryItems(data.map(mapApiItem));
+    } catch (error) {
+      setInventoryError(error instanceof Error ? error.message : "Falha ao carregar inventário.");
+    } finally {
+      if (withSpinner) {
+        setIsLoadingInventory(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    void loadInventory(true);
+  }, []);
+
+  const runInventoryMutation = async (operation: () => Promise<void>) => {
+    setIsMutatingInventory(true);
+
+    try {
+      setInventoryError(null);
+      await operation();
+      await loadInventory(false);
+      return true;
+    } catch (error) {
+      setInventoryError(error instanceof Error ? error.message : "Falha ao atualizar inventário.");
+      return false;
+    } finally {
+      setIsMutatingInventory(false);
+    }
+  };
 
   const handleCreateDialogChange = (open: boolean) => {
     setIsCreateDialogOpen(open);
@@ -165,18 +254,11 @@ export default function Inventory() {
     }));
   };
 
-  const handleCreateEquipment = (event: FormEvent<HTMLFormElement>) => {
+  const handleCreateEquipment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const quantity = Math.max(1, Number(formData.quantity || 1));
-    const available = quantity;
-    const categoryPrefix = formData.category
-      .split(" ")
-      .map((part) => part[0]?.toUpperCase() ?? "")
-      .join("")
-      .slice(0, 3);
-    const unitDetails = formData.units.slice(0, Math.max(1, quantity)).map((unit, index) => ({
-      order: index + 1,
+    const unitDetails = formData.units.slice(0, Math.max(1, quantity)).map((unit) => ({
       patrimonio: unit.patrimonio.trim(),
       note: unit.note.trim(),
     }));
@@ -191,33 +273,36 @@ export default function Inventory() {
       return;
     }
 
-    setInventoryItems((prev) => [
-      {
-        id: prev.reduce((maxId, item) => Math.max(maxId, item.id), 0) + 1,
-        name: formData.name.trim(),
-        patrimonio: primaryPatrimonio,
-        category: formData.category,
-        quantity,
-        available,
-        status: available < quantity / 3 ? "baixo" : "disponível",
-        code: `${categoryPrefix || "EQP"}-${String(prev.reduce((maxId, item) => Math.max(maxId, item.id), 0) + 1).padStart(3, "0")}`,
-        condition: quantity > 1 ? "Regular" : "Bom",
-        note: formData.note.trim() || null,
-        units: unitDetails.map((unit) => ({ ...unit, inMaintenance: false })),
-      },
-      ...prev,
-    ]);
+    const created = await runInventoryMutation(async () => {
+      await createInventario({
+        nome: formData.name.trim(),
+        categoria: formData.category,
+        observacao: formData.note.trim() || undefined,
+        unidades: unitDetails.map((unit) => ({
+          patrimonio: unit.patrimonio,
+          status: "disponivel",
+          observacao: unit.note || undefined,
+        })),
+      });
+    });
 
-    setIsCreateDialogOpen(false);
-    setFormData(getDefaultInventoryFormData());
-    setSelectedCategory(formData.category);
+    if (created) {
+      setIsCreateDialogOpen(false);
+      setFormData(getDefaultInventoryFormData());
+      setSelectedCategory(formData.category);
+    }
   };
 
-  const handleRemoveEquipment = (itemId: number) => {
-    setInventoryItems((prev) => prev.filter((item) => item.id !== itemId));
-    setSelectedItemId(null);
-    setSelectedUnitOrders([]);
-    setUnitSelectionMode("none");
+  const handleRemoveEquipment = async (itemId: number) => {
+    const removed = await runInventoryMutation(async () => {
+      await deleteInventario(itemId);
+    });
+
+    if (removed) {
+      setSelectedItemId(null);
+      setSelectedUnitOrders([]);
+      setUnitSelectionMode("none");
+    }
   };
 
   const handleOpenItemDetails = (itemId: number) => {
@@ -248,90 +333,72 @@ export default function Inventory() {
     setSelectedUnitOrders([]);
   };
 
-  const handleApplyMaintenanceSelection = (itemId: number) => {
+  const handleApplyMaintenanceSelection = async (itemId: number) => {
     if (selectedUnitOrders.length === 0) {
       return;
     }
 
-    setInventoryItems((prev) =>
-      prev.map((item) => {
-        if (item.id !== itemId) {
-          return item;
-        }
-
-        const nextUnits = item.units.map((unit) =>
-          selectedUnitOrders.includes(unit.order)
-            ? { ...unit, inMaintenance: !unit.inMaintenance }
-            : unit,
-        );
-
-        return normalizeItemFromUnits(item, nextUnits);
-      }),
-    );
-
-    setUnitSelectionMode("none");
-    setSelectedUnitOrders([]);
-  };
-
-  const handleApplyRemoveSelection = (itemId: number) => {
-    if (selectedUnitOrders.length === 0) {
+    const item = inventoryItems.find((inventoryItem) => inventoryItem.id === itemId);
+    if (!item) {
       return;
     }
 
-    setInventoryItems((prev) => {
-      const nextItems: InventoryItem[] = [];
+    const selectedUnits = item.units.filter((unit) => selectedUnitOrders.includes(unit.order));
+    if (selectedUnits.length === 0) {
+      return;
+    }
 
-      for (const item of prev) {
-        if (item.id !== itemId) {
-          nextItems.push(item);
-          continue;
-        }
-
-        const nextUnits = item.units.filter((unit) => !selectedUnitOrders.includes(unit.order));
-        if (nextUnits.length === 0) {
-          continue;
-        }
-
-        nextItems.push(normalizeItemFromUnits(item, nextUnits));
-      }
-
-      return nextItems;
+    const updated = await runInventoryMutation(async () => {
+      await Promise.all(
+        selectedUnits.map((unit) =>
+          updateUnidadeInventario(unit.id, {
+            status: unit.inMaintenance ? "disponivel" : "manutencao",
+          }),
+        ),
+      );
     });
 
-    const selectedAfterUpdate = inventoryItems.find((item) => item.id === itemId);
-    if (selectedAfterUpdate && selectedAfterUpdate.units.length - selectedUnitOrders.length <= 0) {
-      setSelectedItemId(null);
+    if (updated) {
+      setUnitSelectionMode("none");
+      setSelectedUnitOrders([]);
+    }
+  };
+
+  const handleApplyRemoveSelection = async (itemId: number) => {
+    if (selectedUnitOrders.length === 0) {
+      return;
     }
 
-    setUnitSelectionMode("none");
-    setSelectedUnitOrders([]);
+    const item = inventoryItems.find((inventoryItem) => inventoryItem.id === itemId);
+    if (!item) {
+      return;
+    }
+
+    const selectedUnits = item.units.filter((unit) => selectedUnitOrders.includes(unit.order));
+    if (selectedUnits.length === 0) {
+      return;
+    }
+
+    const removed = await runInventoryMutation(async () => {
+      if (selectedUnits.length >= item.units.length) {
+        await deleteInventario(itemId);
+        return;
+      }
+
+      await Promise.all(selectedUnits.map((unit) => deleteUnidadeInventario(unit.id)));
+    });
+
+    if (removed) {
+      if (selectedUnits.length >= item.units.length) {
+        setSelectedItemId(null);
+      }
+
+      setUnitSelectionMode("none");
+      setSelectedUnitOrders([]);
+    }
   };
 
-  const handleAddUnit = (itemId: number, patrimonio: string, note: string) => {
-    setInventoryItems((prev) =>
-      prev.map((item) => {
-        if (item.id !== itemId) {
-          return item;
-        }
-
-        const nextOrder = item.units.length + 1;
-        const generatedPatrimonio = `${item.patrimonio}-U${String(nextOrder).padStart(2, "0")}`;
-        const nextUnits = [
-          ...item.units,
-          {
-            order: nextOrder,
-            patrimonio: patrimonio.trim() || generatedPatrimonio,
-            note: note.trim(),
-            inMaintenance: false,
-          },
-        ];
-
-        return normalizeItemFromUnits(item, nextUnits);
-      }),
-    );
-  };
-
-  const handleStartAddUnit = (item: InventoryItem) => {
+  const handleStartAddUnit = () => {
     setUnitSelectionMode("none");
     setSelectedUnitOrders([]);
     setIsAddingUnit(true);
@@ -345,13 +412,23 @@ export default function Inventory() {
     setNewUnitNote("");
   };
 
-  const handleConfirmAddUnit = (itemId: number) => {
+  const handleConfirmAddUnit = async (itemId: number) => {
     if (!newUnitPatrimonio.trim() || !newUnitNote.trim()) {
       return;
     }
 
-    handleAddUnit(itemId, newUnitPatrimonio, newUnitNote);
-    handleCancelAddUnit();
+    const created = await runInventoryMutation(async () => {
+      await createUnidadeInventario({
+        inventarioId: itemId,
+        patrimonio: newUnitPatrimonio.trim(),
+        observacao: newUnitNote.trim(),
+        status: "disponivel",
+      });
+    });
+
+    if (created) {
+      handleCancelAddUnit();
+    }
   };
 
   const unitCount = Math.max(1, Number(formData.quantity || 0));
@@ -370,14 +447,30 @@ export default function Inventory() {
         <motion.button
           whileHover={{ scale: 1.04 }}
           whileTap={{ scale: 0.96 }}
+          disabled={isMutatingInventory}
           onClick={() => setIsCreateDialogOpen(true)}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl"
-          style={{ background: "#3b82f6", color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.85rem" }}
+          style={{ background: "#3b82f6", color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.85rem", opacity: isMutatingInventory ? 0.65 : 1 }}
         >
           <Plus className="w-4 h-4" />
-          Registrar Equipamento
+          {isMutatingInventory ? "Sincronizando..." : "Registrar Equipamento"}
         </motion.button>
       </motion.div>
+
+      {inventoryError && (
+        <div
+          className="rounded-xl px-4 py-3"
+          style={{
+            background: "rgba(239,68,68,0.08)",
+            border: "1px solid rgba(239,68,68,0.22)",
+            color: "#fca5a5",
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: "0.82rem",
+          }}
+        >
+          {inventoryError}
+        </div>
+      )}
 
       {/* Search */}
       <motion.div
@@ -461,7 +554,11 @@ export default function Inventory() {
             </span>
           ))}
         </div>
-        {filteredItems.map((item, index) => {
+        {isLoadingInventory ? (
+          <div className="px-5 py-10" style={{ color: "#7a8fa8", fontFamily: "'Space Grotesk', sans-serif", fontSize: "0.85rem" }}>
+            Carregando inventário...
+          </div>
+        ) : filteredItems.map((item, index) => {
           const cfg = categoryConfig[item.category as keyof typeof categoryConfig];
           const isLow = item.available < item.quantity / 3;
           const maintenanceCount = item.units.filter((unit) => unit.inMaintenance).length;
@@ -511,7 +608,7 @@ export default function Inventory() {
       </motion.div>
 
       {/* Empty state */}
-      {filteredItems.length === 0 && (
+      {!isLoadingInventory && filteredItems.length === 0 && (
         <motion.div
           initial={{ opacity: 0, scale: 0.92 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -727,7 +824,7 @@ export default function Inventory() {
                 >
                   {selectedItem.units.map((unit) => (
                     <button
-                      key={`${selectedItem.id}-${unit.order}`}
+                      key={`${selectedItem.id}-${unit.id}`}
                       type="button"
                       onClick={() => unitSelectionMode !== "none" && handleToggleUnitSelection(unit.order)}
                       className="grid w-full text-left grid-cols-1 md:grid-cols-12 gap-2 rounded-xl p-3"
@@ -759,7 +856,7 @@ export default function Inventory() {
               <div className="flex flex-wrap gap-2" style={{ paddingTop: 4 }}>
                 <button
                   type="button"
-                  onClick={() => handleStartAddUnit(selectedItem)}
+                  onClick={handleStartAddUnit}
                   className="px-3 py-2 rounded-xl"
                   style={{ background: "rgba(59,130,246,0.15)", color: "#93c5fd", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.78rem", border: "1px solid rgba(59,130,246,0.3)" }}
                 >

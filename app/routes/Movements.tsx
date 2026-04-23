@@ -19,6 +19,13 @@ import {
   Filter,
   Info,
 } from "lucide-react";
+import {
+  createMovimentacao,
+  finalizeMovimentacao,
+  listKits,
+  listMovements,
+  type ApiKit,
+} from "~/lib/api";
 
 type MovementType = "saída" | "entrada";
 type MovementStatus = "ativa" | "concluída";
@@ -37,19 +44,19 @@ type Movement = {
 };
 
 type KitTemplateItem = {
-  id: string;
+  id: number;
   name: string;
   defaultQuantity: number;
 };
 
 type KitTemplate = {
-  id: string;
+  id: number;
   name: string;
   items: KitTemplateItem[];
 };
 
 type MovementEquipmentRow = {
-  equipmentId: string;
+  equipmentId: number;
   equipmentName: string;
   quantityInput: string;
   units: Array<{
@@ -67,123 +74,6 @@ type MovementFormData = {
   responsavelExpedicao: string;
   note: string;
 };
-
-const initialMovements: Movement[] = [
-  {
-    id: 1,
-    type: "saída",
-    item: "Kit Reportagem Externa",
-    user: "João Silva",
-    userColor: "#f97316",
-    date: "2026-04-03",
-    time: "14:30",
-    status: "ativa",
-    returnDate: "2026-04-05",
-    note: "Cobertura Eleições SP",
-  },
-  {
-    id: 2,
-    type: "entrada",
-    item: "Bateria V-Mount 150Wh (×3)",
-    user: "Maria Santos",
-    userColor: "#3b82f6",
-    date: "2026-04-03",
-    time: "13:15",
-    status: "concluída",
-    returnDate: null,
-    note: null,
-  },
-  {
-    id: 3,
-    type: "saída",
-    item: "Kit Iluminação LED Arri",
-    user: "Pedro Costa",
-    userColor: "#a855f7",
-    date: "2026-04-03",
-    time: "11:00",
-    status: "ativa",
-    returnDate: "2026-04-04",
-    note: "Entrevista estúdio 2",
-  },
-  {
-    id: 4,
-    type: "entrada",
-    item: "Microfone Shotgun Rode NTG3",
-    user: "Ana Paula",
-    userColor: "#22c55e",
-    date: "2026-04-03",
-    time: "10:45",
-    status: "concluída",
-    returnDate: null,
-    note: null,
-  },
-  {
-    id: 5,
-    type: "saída",
-    item: "Sony A7 III + 3 Lentes",
-    user: "Carlos Mendes",
-    userColor: "#ef4444",
-    date: "2026-04-02",
-    time: "16:20",
-    status: "ativa",
-    returnDate: "2026-04-02",
-    note: "Documental Parque Estadual",
-  },
-  {
-    id: 6,
-    type: "entrada",
-    item: "Kit Documentário Completo",
-    user: "Beatriz Lima",
-    userColor: "#f59e0b",
-    date: "2026-04-02",
-    time: "15:00",
-    status: "concluída",
-    returnDate: null,
-    note: null,
-  },
-  {
-    id: 7,
-    type: "saída",
-    item: "Canon C300 Mark III",
-    user: "Rafael Oliveira",
-    userColor: "#06b6d4",
-    date: "2026-04-01",
-    time: "09:00",
-    status: "concluída",
-    returnDate: "2026-04-01",
-    note: "Jornal da manhã",
-  },
-];
-
-const kitTemplates: KitTemplate[] = [
-  {
-    id: "kit-reportagem",
-    name: "Kit Reportagem Externa",
-    items: [
-      { id: "cam-a7", name: "Câmera Sony A7 III", defaultQuantity: 1 },
-      { id: "bat-vmount", name: "Bateria V-Mount 150Wh", defaultQuantity: 2 },
-      { id: "mic-shotgun", name: "Microfone Shotgun", defaultQuantity: 1 },
-    ],
-  },
-  {
-    id: "kit-iluminacao",
-    name: "Kit Iluminação LED Arri",
-    items: [
-      { id: "led-arri", name: "Painel LED Arri", defaultQuantity: 2 },
-      { id: "tripes-luz", name: "Tripé de iluminação", defaultQuantity: 2 },
-      { id: "cabos-xlr", name: "Cabos XLR", defaultQuantity: 4 },
-    ],
-  },
-  {
-    id: "kit-documentario",
-    name: "Kit Documentário Completo",
-    items: [
-      { id: "cam-c300", name: "Canon C300 Mark III", defaultQuantity: 1 },
-      { id: "bat-npf", name: "Bateria NP-F970", defaultQuantity: 4 },
-      { id: "lentes-kit", name: "Kit de lentes", defaultQuantity: 1 },
-    ],
-  },
-];
 
 const userPalette = ["#f97316", "#3b82f6", "#a855f7", "#22c55e", "#ef4444", "#f59e0b", "#06b6d4"];
 
@@ -203,36 +93,57 @@ function createUnits(quantity: number) {
   return Array.from({ length: quantity }, () => ({ patrimonio: "", note: "" }));
 }
 
-// Função para buscar movimentos da API
-async function fetchMovements(tab: string): Promise<Movement[]> {
-  try {
-    const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api/movements';
-    const params = new URLSearchParams();
-
-    if (tab === 'saidas') {
-      params.append('type', 'saída');
-      params.append('status', 'concluída');
-    } else if (tab === 'devolucao') {
-      params.append('type', 'entrada');
-    } else if (tab === 'fora') {
-      params.append('type', 'saída');
-      params.append('status', 'ativa');
-    }
-
-    const response = await fetch(`${apiUrl}?${params.toString()}`);
-    if (!response.ok) {
-      throw new Error('Erro ao buscar movimentos');
-    }
-    const data = await response.json();
-
-    return data.map((movement: any) => ({
-      ...movement,
-      userColor: userPalette[movement.id % userPalette.length],
-    }));
-  } catch (error) {
-    console.error('Erro ao buscar movimentos:', error);
-    return [];
+function truncateTo255(value: string) {
+  if (value.length <= 255) {
+    return value;
   }
+
+  return value.slice(0, 255);
+}
+
+function mapKitsToTemplates(kits: ApiKit[]): KitTemplate[] {
+  return kits.map((kit) => ({
+    id: kit.id,
+    name: kit.nome,
+    items: kit.itens.map((item) => ({
+      id: item.id,
+      name: item.inventario?.nome ?? `Item ${item.id}`,
+      defaultQuantity: Math.max(1, item.quantidade ?? 1),
+    })),
+  }));
+}
+
+function getMovementQuery(tab: string) {
+  if (tab === "saidas") {
+    return { type: "saída" as const, status: "concluída" as const };
+  }
+
+  if (tab === "devolucao") {
+    return { type: "entrada" as const };
+  }
+
+  if (tab === "fora") {
+    return { type: "saída" as const, status: "ativa" as const };
+  }
+
+  return undefined;
+}
+
+async function fetchMovements(tab: string): Promise<Movement[]> {
+  const data = await listMovements(getMovementQuery(tab));
+
+  return data.map((movement) => ({
+    id: movement.id,
+    type: movement.type,
+    item: movement.item,
+    user: movement.user,
+    userColor: userPalette[movement.id % userPalette.length],
+    date: movement.date,
+    time: movement.time ?? "--:--",
+    status: movement.status,
+    returnDate: movement.returnDate,
+    note: movement.note,
+  }));
 }
 
 const typeConfig = {
@@ -270,24 +181,96 @@ const TABS = [
 export default function Movements() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("historico");
+  const [kitTemplates, setKitTemplates] = useState<KitTemplate[]>([]);
   const [movementRecords, setMovementRecords] = useState<Movement[]>([]);
+  const [tabCounts, setTabCounts] = useState<Record<string, number>>({
+    historico: 0,
+    saidas: 0,
+    devolucao: 0,
+    fora: 0,
+  });
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedMovement, setSelectedMovement] = useState<Movement | null>(null);
   const [formData, setFormData] = useState<MovementFormData>(getDefaultFormData);
   const [equipmentRows, setEquipmentRows] = useState<MovementEquipmentRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Carregar movimentos quando a aba muda
-  useEffect(() => {
-    const loadMovements = async () => {
-      setLoading(true);
-      const data = await fetchMovements(activeTab);
+  const loadMovementsForTab = async (tab: string) => {
+    setLoading(true);
+
+    try {
+      setErrorMessage(null);
+      const data = await fetchMovements(tab);
       setMovementRecords(data);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Erro ao buscar movimentos.");
+      setMovementRecords([]);
+    } finally {
       setLoading(false);
+    }
+  };
+
+  const refreshTabCounts = async () => {
+    try {
+      const [historico, saidas, devolucao, fora] = await Promise.all([
+        listMovements(),
+        listMovements(getMovementQuery("saidas")),
+        listMovements(getMovementQuery("devolucao")),
+        listMovements(getMovementQuery("fora")),
+      ]);
+
+      setTabCounts({
+        historico: historico.length,
+        saidas: saidas.length,
+        devolucao: devolucao.length,
+        fora: fora.length,
+      });
+    } catch {
+      setTabCounts({
+        historico: 0,
+        saidas: 0,
+        devolucao: 0,
+        fora: 0,
+      });
+    }
+  };
+
+  useEffect(() => {
+    const loadKits = async () => {
+      try {
+        const kits = await listKits();
+        setKitTemplates(mapKitsToTemplates(kits));
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : "Erro ao buscar kits.");
+      }
     };
-    loadMovements();
+
+    void loadKits();
+    void refreshTabCounts();
+  }, []);
+
+  useEffect(() => {
+    void loadMovementsForTab(activeTab);
   }, [activeTab]);
+
+  const runMovementMutation = async (operation: () => Promise<void>) => {
+    setIsSaving(true);
+
+    try {
+      setErrorMessage(null);
+      await operation();
+      await Promise.all([loadMovementsForTab(activeTab), refreshTabCounts()]);
+      return true;
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Falha ao atualizar movimentação.");
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleCreateDialogChange = (open: boolean) => {
     setIsCreateDialogOpen(open);
@@ -304,7 +287,7 @@ export default function Movements() {
   const handleKitChange = (kitId: string) => {
     handleFormChange("selectedKitId", kitId);
 
-    const selectedKit = kitTemplates.find((kit) => kit.id === kitId);
+    const selectedKit = kitTemplates.find((kit) => kit.id === Number(kitId));
     if (!selectedKit) {
       setEquipmentRows([]);
       return;
@@ -320,7 +303,7 @@ export default function Movements() {
     );
   };
 
-  const handleEquipmentQuantityChange = (equipmentId: string, value: string) => {
+  const handleEquipmentQuantityChange = (equipmentId: number, value: string) => {
     const sanitized = value.replace(/[^0-9]/g, "");
 
     setEquipmentRows((prev) =>
@@ -345,7 +328,7 @@ export default function Movements() {
   };
 
   const handleEquipmentUnitChange = (
-    equipmentId: string,
+    equipmentId: number,
     unitIndex: number,
     field: "patrimonio" | "note",
     value: string,
@@ -364,14 +347,17 @@ export default function Movements() {
     );
   };
 
-  const handleCreateMovement = (event: FormEvent<HTMLFormElement>) => {
+  const handleCreateMovement = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    const kitId = Number(formData.selectedKitId);
+    if (!Number.isFinite(kitId) || kitId < 1) {
+      return;
+    }
 
     const now = new Date();
     const createdDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
     const createdTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-    const nextId = movementRecords.reduce((maxId, item) => Math.max(maxId, item.id), 0) + 1;
-    const selectedKit = kitTemplates.find((kit) => kit.id === formData.selectedKitId);
     const normalizedNote = formData.note.trim();
     const equipmentDetails = equipmentRows
       .map((row) => {
@@ -415,24 +401,25 @@ export default function Movements() {
       .filter(Boolean)
       .join(" • ");
 
-    const newMovement: Movement = {
-      id: nextId,
-      type: "saída",
-      item: selectedKit?.name ?? "Movimentação sem kit",
-      user: formData.responsavelExpedicao.trim(),
-      userColor: userPalette[nextId % userPalette.length],
-      date: createdDate,
-      time: createdTime,
-      status: "ativa",
-      returnDate: null,
-      note: notes || null,
-    };
+    const created = await runMovementMutation(async () => {
+      await createMovimentacao({
+        kitId,
+        dataSaida: createdDate,
+        horaSaida: createdTime,
+        responsavelSaida: formData.responsavelExpedicao.trim() || undefined,
+        observacao: notes ? truncateTo255(notes) : undefined,
+      });
+    });
 
-    setMovementRecords((prev) => [newMovement, ...prev]);
-    setIsCreateDialogOpen(false);
-    setFormData(getDefaultFormData());
-    setEquipmentRows([]);
-    setActiveTab("historico");
+    if (created) {
+      setIsCreateDialogOpen(false);
+      setFormData(getDefaultFormData());
+      setEquipmentRows([]);
+
+      if (activeTab !== "historico") {
+        setActiveTab("historico");
+      }
+    }
   };
 
   const openMovementDetails = (movement: Movement) => {
@@ -445,21 +432,15 @@ export default function Movements() {
     setSelectedMovement(null);
   };
 
-  const handleReturnMovement = (movementId: number) => {
-    const now = new Date();
-    const returnDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  const handleReturnMovement = async (movementId: number) => {
+    const movimentacaoId = Math.floor(movementId / 10);
+    if (!Number.isFinite(movimentacaoId) || movimentacaoId < 1) {
+      return;
+    }
 
-    setMovementRecords((prev) =>
-      prev.map((movement) =>
-        movement.id === movementId
-          ? {
-              ...movement,
-              status: "concluída",
-              returnDate,
-            }
-          : movement,
-      ),
-    );
+    await runMovementMutation(async () => {
+      await finalizeMovimentacao(movimentacaoId);
+    });
   };
 
   const filteredMovements = movementRecords.filter((m) => {
@@ -468,14 +449,6 @@ export default function Movements() {
       m.user.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
-
-  // Como os dados já vêm filtrados da API, tabCounts pode ser calculado baseado nos dados carregados
-  const tabCounts: Record<string, number> = {
-    historico: movementRecords.length, // Para historico, mostra todos
-    saidas: movementRecords.filter((m) => m.type === "saída" && m.status === "concluída").length,
-    devolucao: movementRecords.filter((m) => m.type === "entrada").length,
-    fora: movementRecords.filter((m) => m.type === "saída" && m.status !== "concluída").length,
-  };
 
   return (
     <div className="space-y-6 max-w-7xl">
@@ -489,14 +462,30 @@ export default function Movements() {
         <motion.button
           whileHover={{ scale: 1.04 }}
           whileTap={{ scale: 0.96 }}
+          disabled={isSaving}
           onClick={() => setIsCreateDialogOpen(true)}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl"
-          style={{ background: "#22c55e", color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.85rem" }}
+          style={{ background: "#22c55e", color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.85rem", opacity: isSaving ? 0.65 : 1 }}
         >
           <Plus className="w-4 h-4" />
-          Nova Movimentação
+          {isSaving ? "Sincronizando..." : "Nova Movimentação"}
         </motion.button>
       </motion.div>
+
+      {errorMessage && (
+        <div
+          className="rounded-xl px-4 py-3"
+          style={{
+            background: "rgba(239,68,68,0.08)",
+            border: "1px solid rgba(239,68,68,0.22)",
+            color: "#fca5a5",
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: "0.82rem",
+          }}
+        >
+          {errorMessage}
+        </div>
+      )}
 
       {/* Search + Tabs */}
       <motion.div
@@ -689,6 +678,7 @@ export default function Movements() {
                           <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
+                            disabled={isSaving}
                             onClick={() => handleReturnMovement(mv.id)}
                             className="px-3 py-1.5 rounded-lg transition-all"
                             style={{
@@ -698,6 +688,7 @@ export default function Movements() {
                               fontFamily: "'Space Grotesk', sans-serif",
                               fontWeight: 600,
                               fontSize: "0.78rem",
+                              opacity: isSaving ? 0.65 : 1,
                             }}
                           >
                             Devolver
@@ -758,7 +749,7 @@ export default function Movements() {
               Criar Movimentação
             </DialogTitle>
             <DialogDescription style={{ color: "#7a8fa8", fontFamily: "'Space Grotesk', sans-serif" }}>
-              Preencha os dados da folha de saída/entrada. A integração com backend você conecta depois.
+              Preencha os dados da folha de saída/entrada para salvar diretamente no backend.
             </DialogDescription>
           </DialogHeader>
 
@@ -910,17 +901,19 @@ export default function Movements() {
               <button
                 type="button"
                 onClick={() => setIsCreateDialogOpen(false)}
+                disabled={isSaving}
                 className="px-4 py-2.5 rounded-xl"
-                style={{ border: "1px solid rgba(255,255,255,0.1)", color: "#7a8fa8", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.85rem" }}
+                style={{ border: "1px solid rgba(255,255,255,0.1)", color: "#7a8fa8", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.85rem", opacity: isSaving ? 0.65 : 1 }}
               >
                 Cancelar e fechar
               </button>
               <button
                 type="submit"
+                disabled={isSaving}
                 className="px-4 py-2.5 rounded-xl"
-                style={{ background: "#22c55e", color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.85rem" }}
+                style={{ background: "#22c55e", color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.85rem", opacity: isSaving ? 0.65 : 1 }}
               >
-                Salvar movimentação
+                {isSaving ? "Salvando..." : "Salvar movimentação"}
               </button>
             </DialogFooter>
           </form>

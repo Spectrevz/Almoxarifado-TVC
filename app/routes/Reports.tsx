@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import {
   BarChart3,
@@ -26,23 +27,24 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import { listKits, listMovements, type ApiKit, type ApiMovementEvent } from "~/lib/api";
 
-const monthlyData = [
-  { month: "Out", saídas: 45, entradas: 42 },
-  { month: "Nov", saídas: 52, entradas: 48 },
-  { month: "Dez", saídas: 38, entradas: 40 },
-  { month: "Jan", saídas: 65, entradas: 60 },
-  { month: "Fev", saídas: 58, entradas: 55 },
-  { month: "Mar", saídas: 72, entradas: 68 },
-];
+type RecentMovement = {
+  id: number;
+  type: "saída" | "entrada" | "alerta";
+  item: string;
+  user: string;
+  time: string;
+  color: string;
+};
 
-const recentMovements = [
-  { id: 1, type: "saída", item: "Kit Reportagem Externa", user: "João Silva", time: "14:30", color: "#f97316" },
-  { id: 2, type: "entrada", item: "Bateria V-Mount 150Wh", user: "Maria Santos", time: "13:15", color: "#22c55e" },
-  { id: 3, type: "saída", item: "Kit Iluminação LED", user: "Pedro Costa", time: "11:00", color: "#f97316" },
-  { id: 4, type: "entrada", item: "Microfone Rode NTG3", user: "Ana Paula", time: "10:45", color: "#22c55e" },
-  { id: 5, type: "alerta", item: "Sony A7 III — Devolução Pendente", user: "Carlos Mendes", time: "09:20", color: "#ef4444" },
-];
+function getMonthLabel(date: Date) {
+  return date.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
+}
+
+function composeDateTime(event: ApiMovementEvent) {
+  return `${event.date} ${event.time ?? "00:00:00"}`;
+}
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
@@ -70,6 +72,94 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export default function Reports() {
   const navigate = useNavigate();
+  const [movementEvents, setMovementEvents] = useState<ApiMovementEvent[]>([]);
+  const [kits, setKits] = useState<ApiKit[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+
+      try {
+        setErrorMessage(null);
+        const [movementData, kitsData] = await Promise.all([
+          listMovements(),
+          listKits(),
+        ]);
+        setMovementEvents(movementData);
+        setKits(kitsData);
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : "Falha ao carregar relatórios.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void loadData();
+  }, []);
+
+  const monthlyData = useMemo(() => {
+    const now = new Date();
+    const lastSixMonths = Array.from({ length: 6 }, (_, index) => {
+      const date = new Date(now.getFullYear(), now.getMonth() - (5 - index), 1);
+      return {
+        key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
+        month: getMonthLabel(date),
+        saídas: 0,
+        entradas: 0,
+      };
+    });
+
+    const monthlyMap = new Map(lastSixMonths.map((entry) => [entry.key, entry]));
+
+    for (const event of movementEvents) {
+      const date = new Date(event.date);
+      if (Number.isNaN(date.getTime())) {
+        continue;
+      }
+
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      const target = monthlyMap.get(key);
+      if (!target) {
+        continue;
+      }
+
+      if (event.type === "saída") {
+        target.saídas += 1;
+      } else {
+        target.entradas += 1;
+      }
+    }
+
+    return Array.from(monthlyMap.values());
+  }, [movementEvents]);
+
+  const recentMovements = useMemo<RecentMovement[]>(() => {
+    return movementEvents
+      .slice()
+      .sort((left, right) => composeDateTime(right).localeCompare(composeDateTime(left)))
+      .slice(0, 5)
+      .map((event) => {
+        const isAlert = event.type === "saída" && event.status === "ativa";
+        const mappedType: RecentMovement["type"] = isAlert ? "alerta" : event.type;
+        const color =
+          mappedType === "entrada"
+            ? "#22c55e"
+            : mappedType === "alerta"
+              ? "#ef4444"
+              : "#f97316";
+
+        return {
+          id: event.id,
+          type: mappedType,
+          item: event.item,
+          user: event.user,
+          time: event.time ?? "--:--",
+          color,
+        };
+      });
+  }, [movementEvents]);
 
   const quickActions = [
     { label: "Nova Saída", icon: ArrowUpRight, color: "#f97316", bg: "rgba(249,115,22,0.1)", border: "rgba(249,115,22,0.2)", path: "/movimentacoes", onClick: () => navigate("/movimentacoes") },
@@ -87,16 +177,21 @@ export default function Reports() {
     { label: "Devoluções Pendentes", icon: ArrowUpRight, color: "#22c55e" },
   ];
 
+  const activeOut = movementEvents.filter((event) => event.type === "saída" && event.status === "ativa").length;
+  const availableKits = kits.length > 0
+    ? Math.max(0, kits.length - activeOut)
+    : movementEvents.filter((event) => event.type === "entrada").length;
+
   const statusStats = [
     {
       label: "Kits disponíveis",
-      value: recentMovements.filter((mv) => mv.type === "entrada").length,
+      value: availableKits,
       color: "#22c55e",
       icon: ArrowDownLeft,
     },
     {
       label: "Kits fora",
-      value: recentMovements.filter((mv) => mv.type === "saída" || mv.type === "alerta").length,
+      value: activeOut,
       color: "#f97316",
       icon: ArrowUpRight,
     },
@@ -121,6 +216,36 @@ export default function Reports() {
         </motion.button>
       </motion.div>
 */}
+      {errorMessage && (
+        <div
+          className="rounded-xl px-4 py-3"
+          style={{
+            background: "rgba(239,68,68,0.08)",
+            border: "1px solid rgba(239,68,68,0.22)",
+            color: "#fca5a5",
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: "0.82rem",
+          }}
+        >
+          {errorMessage}
+        </div>
+      )}
+
+      {isLoading && !errorMessage && (
+        <div
+          className="rounded-xl px-4 py-3"
+          style={{
+            background: "rgba(59,130,246,0.08)",
+            border: "1px solid rgba(59,130,246,0.22)",
+            color: "#93c5fd",
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: "0.82rem",
+          }}
+        >
+          Carregando dados do relatório...
+        </div>
+      )}
+
       {/* Quick Actions */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
