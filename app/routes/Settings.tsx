@@ -56,7 +56,7 @@ export default function Settings() {
   ];
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-5 sm:space-y-6 max-w-4xl">
       {/* Settings Groups */}
       <div className="space-y-5">
         {settingsGroups.map((group, groupIndex) => (
@@ -94,7 +94,7 @@ export default function Settings() {
             {/* Settings Items */}
             <div className="divide-y" style={{ borderColor: "rgba(255,255,255,0.04)" }}>
               {group.settings.map((setting, settingIndex) => (
-                <div key={setting.key} className="px-6 py-4 flex items-center justify-between">
+                <div key={setting.key} className="px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
                     <label
                       style={{
@@ -163,11 +163,11 @@ export default function Settings() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="flex gap-3 pt-4"
+        className="flex flex-col sm:flex-row gap-3 pt-4"
       >
         <button
           onClick={handleSave}
-          className="flex items-center gap-2 flex-1 px-4 py-3 rounded-xl justify-center transition-all"
+          className="flex items-center gap-2 w-full sm:flex-1 px-4 py-3 rounded-xl justify-center transition-all"
           style={{
             background: "rgba(168,85,247,0.15)",
             border: "1px solid rgba(168,85,247,0.3)",
@@ -188,7 +188,7 @@ export default function Settings() {
         </button>
 
         <button
-          className="flex items-center gap-2 px-4 py-3 rounded-xl transition-all"
+          className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-3 rounded-xl transition-all"
           style={{
             background: "rgba(255,255,255,0.05)",
             border: "1px solid rgba(255,255,255,0.1)",

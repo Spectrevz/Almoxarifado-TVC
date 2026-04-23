@@ -198,7 +198,7 @@ export default function Reports() {
   ];
 
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-5 sm:space-y-6 max-w-7xl">
       {/* Header 
       <motion.div
         initial={{ opacity: 0, y: -16 }}
@@ -251,7 +251,7 @@ export default function Reports() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.65 }}
-        className="w-full rounded-2xl p-5"
+        className="w-full rounded-2xl p-4 sm:p-5"
         style={{ background: "#0d1221", border: "1px solid rgba(255,255,255,0.06)" }}
       >
         <p style={{ color: "#4a5d78", fontSize: "0.72rem", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>
@@ -295,13 +295,13 @@ export default function Reports() {
       </motion.div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
         {/* Area chart - Monthly */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.35 }}
-          className="p-5 rounded-2xl"
+          className="p-4 sm:p-5 rounded-2xl"
           style={{ background: "#0d1221", border: "1px solid rgba(255,255,255,0.06)" }}
         >
           <div className="flex items-center justify-between mb-5">
@@ -369,7 +369,7 @@ export default function Reports() {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.4 }}
-          className="p-5 rounded-2xl"
+          className="p-4 sm:p-5 rounded-2xl"
           style={{ background: "#0d1221", border: "1px solid rgba(255,255,255,0.06)" }}
         >
           <div className="flex items-center justify-between mb-5">
@@ -414,18 +414,18 @@ export default function Reports() {
       </div>
 
       {/* Bottom row */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-5">
         {/* Top Users — Leaderboard */}
                 {/* Activity timeline — takes 3 cols */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.45 }}
-          className="lg:col-span-3 rounded-2xl p-5"
+          className="lg:col-span-3 rounded-2xl p-4 sm:p-5"
           style={{ background: "#0d1221", border: "1px solid rgba(255,255,255,0.06)" }}
         >
           
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center justify-between gap-3 flex-wrap mb-5">
             <div>
               <h3 style={{ color: "#e8edf5", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.95rem" }}>
                 Atividade Recente
@@ -520,7 +520,7 @@ export default function Reports() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="lg:col-span-2 p-5 rounded-2xl"
+          className="lg:col-span-2 p-4 sm:p-5 rounded-2xl"
           style={{ background: "#0d1221", border: "1px solid rgba(255,255,255,0.06)" }}
         >
           <div className="flex items-center gap-3 mb-5">

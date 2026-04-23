@@ -188,7 +188,7 @@ export default function Kits() {
   ];
 
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-5 sm:space-y-6 max-w-7xl">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -16 }}
@@ -199,7 +199,7 @@ export default function Kits() {
           whileHover={{ scale: 1.04 }}
           whileTap={{ scale: 0.96 }}
           disabled
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl"
+          className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2.5 rounded-xl"
           style={{ background: "#a855f7", color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.85rem", opacity: 0.65 }}
         >
           <Plus className="w-4 h-4" />
@@ -227,7 +227,7 @@ export default function Kits() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="grid grid-cols-2 lg:grid-cols-4 gap-3"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
       >
         {summaryStats.map((stat, index) => (
           <motion.div
@@ -284,7 +284,7 @@ export default function Kits() {
         </div>
 
         {/* Status filters */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
           {[
             { value: "todos", label: "Todos" },
             { value: "disponível", label: "Disponíveis" },
@@ -412,7 +412,7 @@ export default function Kits() {
 
                 {/* Actions */}
                 <div className="p-5">
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <button
                       className="flex items-center gap-2 flex-1 justify-center py-2.5 rounded-xl transition-colors hover:bg-white/5"
                       style={{ color: "#4a5d78", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 500, fontSize: "0.82rem", border: "1px solid rgba(255,255,255,0.07)" }}
