@@ -6,7 +6,6 @@ import {
   Boxes,
   ArrowRightLeft,
   BarChart3,
-  Menu,
   X,
   Settings,
 } from "lucide-react";
@@ -296,7 +295,7 @@ export default function Layout() {
             className="lg:hidden w-9 h-9 rounded-lg flex items-center justify-center border"
             style={{ borderColor: "rgba(255,255,255,0.08)", color: "#c8d6e8", background: "rgba(255,255,255,0.03)" }}
           >
-            <Menu className="w-4 h-4" />
+            <img src="/logo.png" alt="Abrir menu" className="w-7 h-7" />
           </button>
 
           {/* Nome da pagina atual */}
