@@ -436,7 +436,7 @@ export default function Inventory() {
   const requireUnitNote = unitCount > 1;
 
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-5 sm:space-y-6 max-w-7xl">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -16 }}
@@ -449,7 +449,7 @@ export default function Inventory() {
           whileTap={{ scale: 0.96 }}
           disabled={isMutatingInventory}
           onClick={() => setIsCreateDialogOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl"
+          className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2.5 rounded-xl"
           style={{ background: "#3b82f6", color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.85rem", opacity: isMutatingInventory ? 0.65 : 1 }}
         >
           <Plus className="w-4 h-4" />
@@ -477,7 +477,7 @@ export default function Inventory() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="flex gap-3"
+        className="flex flex-col sm:flex-row gap-3"
       >
         <div className="flex-1 relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "#4a5d78" }} />
@@ -543,68 +543,132 @@ export default function Inventory() {
         className="rounded-2xl overflow-hidden"
         style={{ background: "#0d1221", border: "1px solid rgba(255,255,255,0.06)" }}
       >
-        {/* Table header */}
-        <div
-          className="grid gap-4 px-5 py-3"
-          style={{ gridTemplateColumns: "1fr 120px 90px 110px 90px 120px 100px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}
-        >
-          {["Equipamento", "Patrimônio", "Total", "Disponível", "Fora", "Manutenção", "Ações"].map((h) => (
-            <span key={h} style={{ color: "#4a5d78", fontSize: "0.7rem", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>
-              {h}
-            </span>
-          ))}
-        </div>
         {isLoadingInventory ? (
           <div className="px-5 py-10" style={{ color: "#7a8fa8", fontFamily: "'Space Grotesk', sans-serif", fontSize: "0.85rem" }}>
             Carregando inventário...
           </div>
-        ) : filteredItems.map((item, index) => {
-          const cfg = categoryConfig[item.category as keyof typeof categoryConfig];
-          const isLow = item.available < item.quantity / 3;
-          const maintenanceCount = item.units.filter((unit) => unit.inMaintenance).length;
-          const outsideCount = Math.max(0, item.quantity - item.available - maintenanceCount);
-          return (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.04 }}
-              className="grid gap-4 px-5 py-3.5 items-center transition-colors"
-              style={{
-                gridTemplateColumns: "1fr 120px 90px 110px 90px 120px 100px",
-                borderBottom: "1px solid rgba(255,255,255,0.04)",
-              }}
-              onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.02)")}
-              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: cfg.bg }}>
-                  <cfg.icon className="w-3.5 h-3.5" style={{ color: cfg.color }} />
+        ) : (
+          <>
+            {/* Mobile cards */}
+            <div className="md:hidden divide-y" style={{ borderColor: "rgba(255,255,255,0.04)" }}>
+              {filteredItems.map((item, index) => {
+                const cfg = categoryConfig[item.category as keyof typeof categoryConfig];
+                const isLow = item.available < item.quantity / 3;
+                const maintenanceCount = item.units.filter((unit) => unit.inMaintenance).length;
+                const outsideCount = Math.max(0, item.quantity - item.available - maintenanceCount);
+
+                return (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.04 }}
+                    className="p-4 space-y-3"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: cfg.bg }}>
+                        <cfg.icon className="w-3.5 h-3.5" style={{ color: cfg.color }} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate" style={{ color: "#c8d6e8", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 500, fontSize: "0.85rem" }}>{item.name}</p>
+                        <p style={{ color: "#4a5d78", fontSize: "0.72rem", fontFamily: "'Space Grotesk', sans-serif" }}>{item.category}</p>
+                      </div>
+                      <button
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors hover:opacity-80"
+                        onClick={() => handleOpenItemDetails(item.id)}
+                        style={{ background: "rgba(255,255,255,0.04)", color: "#c8d6e8", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.75rem", border: "1px solid rgba(255,255,255,0.08)" }}
+                      >
+                        Sobre
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="rounded-lg p-2.5" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                        <p style={{ color: "#4a5d78", fontSize: "0.65rem", fontFamily: "'Space Grotesk', sans-serif", textTransform: "uppercase" }}>Patrimônio</p>
+                        <p className="truncate" style={{ color: "#c8d6e8", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.78rem" }}>{item.patrimonio}</p>
+                      </div>
+                      <div className="rounded-lg p-2.5" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                        <p style={{ color: "#4a5d78", fontSize: "0.65rem", fontFamily: "'Space Grotesk', sans-serif", textTransform: "uppercase" }}>Total</p>
+                        <p style={{ color: "#c8d6e8", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.82rem", fontWeight: 600 }}>{item.quantity}</p>
+                      </div>
+                      <div className="rounded-lg p-2.5" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                        <p style={{ color: "#4a5d78", fontSize: "0.65rem", fontFamily: "'Space Grotesk', sans-serif", textTransform: "uppercase" }}>Disponível</p>
+                        <p style={{ color: isLow ? "#ef4444" : "#22c55e", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.82rem", fontWeight: 700 }}>{item.available}</p>
+                      </div>
+                      <div className="rounded-lg p-2.5" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                        <p style={{ color: "#4a5d78", fontSize: "0.65rem", fontFamily: "'Space Grotesk', sans-serif", textTransform: "uppercase" }}>Fora / Manutenção</p>
+                        <p style={{ color: "#f59e0b", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.82rem", fontWeight: 700 }}>{outsideCount} / {maintenanceCount}</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {/* Table desktop/tablet */}
+            <div className="hidden md:block overflow-x-auto">
+              <div className="min-w-[980px]">
+                <div
+                  className="grid gap-4 px-5 py-3"
+                  style={{ gridTemplateColumns: "1fr 120px 90px 110px 90px 120px 100px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+                >
+                  {["Equipamento", "Patrimônio", "Total", "Disponível", "Fora", "Manutenção", "Ações"].map((h) => (
+                    <span key={h} style={{ color: "#4a5d78", fontSize: "0.7rem", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                      {h}
+                    </span>
+                  ))}
                 </div>
-                <div className="min-w-0">
-                  <p className="truncate" style={{ color: "#c8d6e8", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 500, fontSize: "0.85rem" }}>{item.name}</p>
-                  <p style={{ color: "#4a5d78", fontSize: "0.7rem", fontFamily: "'Space Grotesk', sans-serif" }}>{item.category}</p>
-                </div>
+                {filteredItems.map((item, index) => {
+                  const cfg = categoryConfig[item.category as keyof typeof categoryConfig];
+                  const isLow = item.available < item.quantity / 3;
+                  const maintenanceCount = item.units.filter((unit) => unit.inMaintenance).length;
+                  const outsideCount = Math.max(0, item.quantity - item.available - maintenanceCount);
+                  return (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, x: -12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.04 }}
+                      className="grid gap-4 px-5 py-3.5 items-center transition-colors"
+                      style={{
+                        gridTemplateColumns: "1fr 120px 90px 110px 90px 120px 100px",
+                        borderBottom: "1px solid rgba(255,255,255,0.04)",
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.02)")}
+                      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: cfg.bg }}>
+                          <cfg.icon className="w-3.5 h-3.5" style={{ color: cfg.color }} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate" style={{ color: "#c8d6e8", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 500, fontSize: "0.85rem" }}>{item.name}</p>
+                          <p style={{ color: "#4a5d78", fontSize: "0.7rem", fontFamily: "'Space Grotesk', sans-serif" }}>{item.category}</p>
+                        </div>
+                      </div>
+                      <span style={{ color: "#4a5d78", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.78rem" }}>{item.patrimonio}</span>
+                      <span style={{ color: "#c8d6e8", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.85rem", fontWeight: 600 }}>{item.quantity}</span>
+                      <span style={{ color: isLow ? "#ef4444" : "#22c55e", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.85rem", fontWeight: 700 }}>{item.available}</span>
+                      <span style={{ color: item.quantity - item.available > 0 ? "#f59e0b" : "#4a5d78", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.85rem", fontWeight: 700 }}>
+                        {outsideCount}
+                      </span>
+                      <span style={{ color: item.available < item.quantity / 3 ? "#f59e0b" : "#4a5d78", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.85rem", fontWeight: 700 }}>
+                        {maintenanceCount}
+                      </span>
+                      <button
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors hover:opacity-80"
+                        onClick={() => handleOpenItemDetails(item.id)}
+                        style={{ background: "rgba(255,255,255,0.04)", color: "#c8d6e8", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.75rem", border: "1px solid rgba(255,255,255,0.08)" }}
+                      >
+                        Sobre
+                      </button>
+                    </motion.div>
+                  );
+                })}
               </div>
-              <span style={{ color: "#4a5d78", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.78rem" }}>{item.patrimonio}</span>
-              <span style={{ color: "#c8d6e8", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.85rem", fontWeight: 600 }}>{item.quantity}</span>
-              <span style={{ color: isLow ? "#ef4444" : "#22c55e", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.85rem", fontWeight: 700 }}>{item.available}</span>
-              <span style={{ color: item.quantity - item.available > 0 ? "#f59e0b" : "#4a5d78", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.85rem", fontWeight: 700 }}>
-                {outsideCount}
-              </span>
-              <span style={{ color: item.available < item.quantity / 3 ? "#f59e0b" : "#4a5d78", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.85rem", fontWeight: 700 }}>
-                {maintenanceCount}
-              </span>
-              <button
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors hover:opacity-80"
-                onClick={() => handleOpenItemDetails(item.id)}
-                style={{ background: "rgba(255,255,255,0.04)", color: "#c8d6e8", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.75rem", border: "1px solid rgba(255,255,255,0.08)" }}
-              >
-                Sobre
-              </button>
-            </motion.div>
-          );
-        })}
+            </div>
+          </>
+        )}
       </motion.div>
 
       {/* Empty state */}

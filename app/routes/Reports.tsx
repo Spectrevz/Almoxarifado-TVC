@@ -198,7 +198,7 @@ export default function Reports() {
   ];
 
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-5 sm:space-y-6 max-w-7xl">
       {/* Header 
       <motion.div
         initial={{ opacity: 0, y: -16 }}
@@ -251,13 +251,13 @@ export default function Reports() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.65 }}
-        className="w-full rounded-2xl p-5"
+        className="w-full rounded-2xl p-4 sm:p-5"
         style={{ background: "#0d1221", border: "1px solid rgba(255,255,255,0.06)" }}
       >
         <p style={{ color: "#4a5d78", fontSize: "0.72rem", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>
           Ações Rápidas
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-3">
           {quickActions.map((action, index) => (
             <motion.button
               key={action.label}
@@ -267,7 +267,7 @@ export default function Reports() {
               whileHover={{ scale: 1.03, y: -2 }}
               whileTap={{ scale: 0.98 }}
               onClick={action.onClick}
-              className="relative flex items-center gap-3 px-4 py-4 rounded-2xl text-left overflow-hidden group"
+              className="relative flex items-center gap-2 sm:gap-3 px-2.5 sm:px-4 py-3 sm:py-4 rounded-xl sm:rounded-2xl text-left overflow-hidden group"
               style={{
                 background: action.bg,
                 border: `1px solid ${action.border}`,
@@ -278,14 +278,14 @@ export default function Reports() {
                 style={{ background: `radial-gradient(circle at 30% 50%, ${action.color}14 0%, transparent 70%)` }}
               />
               <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 relative z-10"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0 relative z-10"
                 style={{ background: `${action.color}20`, border: `1px solid ${action.color}30` }}
               >
-                <action.icon className="w-4 h-4" style={{ color: action.color }} />
+                <action.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" style={{ color: action.color }} />
               </div>
               <span
-                className="relative z-10"
-                style={{ color: "#c8d6e8", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.85rem" }}
+                className="relative z-10 text-[0.78rem] sm:text-[0.85rem] leading-tight"
+                style={{ color: "#c8d6e8", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600 }}
               >
                 {action.label}
               </span>
@@ -295,13 +295,13 @@ export default function Reports() {
       </motion.div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
         {/* Area chart - Monthly */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.35 }}
-          className="p-5 rounded-2xl"
+          className="p-4 sm:p-5 rounded-2xl"
           style={{ background: "#0d1221", border: "1px solid rgba(255,255,255,0.06)" }}
         >
           <div className="flex items-center justify-between mb-5">
@@ -369,7 +369,7 @@ export default function Reports() {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.4 }}
-          className="p-5 rounded-2xl"
+          className="p-4 sm:p-5 rounded-2xl"
           style={{ background: "#0d1221", border: "1px solid rgba(255,255,255,0.06)" }}
         >
           <div className="flex items-center justify-between mb-5">
@@ -382,7 +382,7 @@ export default function Reports() {
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-1 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 sm:gap-3">
             {statusStats.map((stat, index) => (
               <motion.div
                 key={stat.label}
@@ -390,21 +390,21 @@ export default function Reports() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ delay: 0.08 + index * 0.07, type: "spring" }}
                 whileHover={{ y: -3 }}
-                className="p-4 rounded-2xl min-h-[104px]"
+                className="p-3 sm:p-4 rounded-xl sm:rounded-2xl min-h-[90px] sm:min-h-[104px]"
                 style={{
                   background: "rgba(255,255,255,0.02)",
                   border: "1px solid rgba(255,255,255,0.06)",
                 }}
               >
-                <div className="flex items-center justify-between mb-3">
-                  <p style={{ color: "#4a5d78", fontSize: "0.7rem", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                <div className="flex items-center justify-between mb-2 sm:mb-3">
+                  <p className="text-[0.62rem] sm:text-[0.7rem] leading-tight" style={{ color: "#4a5d78", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase" }}>
                     {stat.label}
                   </p>
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${stat.color}15` }}>
-                    <stat.icon className="w-3.5 h-3.5" style={{ color: stat.color }} />
+                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center" style={{ background: `${stat.color}15` }}>
+                    <stat.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" style={{ color: stat.color }} />
                   </div>
                 </div>
-                <p style={{ color: "#e8edf5", fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: "1.6rem", lineHeight: 1 }}>
+                <p className="text-[1.25rem] sm:text-[1.6rem]" style={{ color: "#e8edf5", fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, lineHeight: 1 }}>
                   {stat.value}
                 </p>
               </motion.div>
@@ -414,18 +414,18 @@ export default function Reports() {
       </div>
 
       {/* Bottom row */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-5">
         {/* Top Users — Leaderboard */}
                 {/* Activity timeline — takes 3 cols */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.45 }}
-          className="lg:col-span-3 rounded-2xl p-5"
+          className="lg:col-span-3 rounded-2xl p-4 sm:p-5"
           style={{ background: "#0d1221", border: "1px solid rgba(255,255,255,0.06)" }}
         >
           
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center justify-between gap-3 flex-wrap mb-5">
             <div>
               <h3 style={{ color: "#e8edf5", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.95rem" }}>
                 Atividade Recente
@@ -520,7 +520,7 @@ export default function Reports() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="lg:col-span-2 p-5 rounded-2xl"
+          className="lg:col-span-2 p-4 sm:p-5 rounded-2xl"
           style={{ background: "#0d1221", border: "1px solid rgba(255,255,255,0.06)" }}
         >
           <div className="flex items-center gap-3 mb-5">

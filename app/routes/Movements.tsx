@@ -451,7 +451,7 @@ export default function Movements() {
   });
 
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-5 sm:space-y-6 max-w-7xl">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -16 }}
@@ -464,7 +464,7 @@ export default function Movements() {
           whileTap={{ scale: 0.96 }}
           disabled={isSaving}
           onClick={() => setIsCreateDialogOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl"
+          className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2.5 rounded-xl"
           style={{ background: "#22c55e", color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.85rem", opacity: isSaving ? 0.65 : 1 }}
         >
           <Plus className="w-4 h-4" />
@@ -496,7 +496,7 @@ export default function Movements() {
         style={{ background: "#0d1221", border: "1px solid rgba(255,255,255,0.06)" }}
       >
         {/* Search row */}
-        <div className="flex gap-3 p-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+        <div className="flex flex-col sm:flex-row gap-3 p-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
           <div className="flex-1 relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "#4a5d78" }} />
             <input
@@ -516,7 +516,7 @@ export default function Movements() {
             />
           </div>
           <button
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl transition-colors hover:bg-white/5"
+            className="flex items-center justify-center sm:justify-start gap-2 w-full sm:w-auto px-4 py-2.5 rounded-xl transition-colors hover:bg-white/5"
             style={{ color: "#4a5d78", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 500, fontSize: "0.82rem", border: "1px solid rgba(255,255,255,0.07)" }}
           >
             <Filter className="w-3.5 h-3.5" />
@@ -590,7 +590,7 @@ export default function Movements() {
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ delay: index * 0.05, type: "spring", stiffness: 300, damping: 28 }}
                   whileHover={{ x: 4 }}
-                  className="relative flex items-start gap-4 p-4 rounded-xl overflow-hidden group cursor-pointer"
+                  className="relative flex items-start gap-3 p-3 sm:p-4 rounded-xl overflow-hidden group cursor-pointer"
                   style={{
                     background: "rgba(255,255,255,0.02)",
                     border: "1px solid rgba(255,255,255,0.05)",
@@ -621,7 +621,7 @@ export default function Movements() {
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
 
                       <div className="min-w-0">
                         <p className="truncate" style={{ color: "#e8edf5", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.9rem", marginBottom: 3 }}>
@@ -642,7 +642,7 @@ export default function Movements() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3 flex-shrink-0">
+                      <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto justify-end">
                         {showOperationalDetails && mv.returnDate && (
                           <div className="text-right hidden sm:block">
                             <p style={{ color: "#4a5d78", fontSize: "0.65rem", fontFamily: "'Space Grotesk', sans-serif", letterSpacing: "0.04em", textTransform: "uppercase" }}>
