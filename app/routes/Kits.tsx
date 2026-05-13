@@ -562,7 +562,7 @@ export default function Kits() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-5 sm:space-y-6 max-w-7xl">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -16 }}
@@ -573,7 +573,7 @@ export default function Kits() {
           whileHover={{ scale: 1.04 }}
           whileTap={{ scale: 0.96 }}
           onClick={() => setIsCreateDialogOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl"
+          className="flex items-center justify-center gap-2 w-full sm:w-auto px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl"
           style={{ background: "#a855f7", color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: "0.85rem" }}
         >
           <Plus className="w-4 h-4" />
@@ -601,7 +601,7 @@ export default function Kits() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="grid grid-cols-2 lg:grid-cols-4 gap-3"
+        className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3"
       >
         {summaryStats.map((stat, index) => (
           <motion.div
@@ -610,21 +610,21 @@ export default function Kits() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.15 + index * 0.07 }}
             whileHover={{ y: -3 }}
-            className="p-4 rounded-2xl"
+            className="p-3 sm:p-4 rounded-xl sm:rounded-2xl"
             style={{
               background: "#0d1221",
               border: "1px solid rgba(255,255,255,0.06)",
             }}
           >
-            <div className="flex items-center justify-between mb-3">
-              <p style={{ color: "#4a5d78", fontSize: "0.72rem", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <p className="text-[0.62rem] sm:text-[0.72rem] leading-tight" style={{ color: "#4a5d78", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase" }}>
                 {stat.label}
               </p>
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${stat.color}15` }}>
-                <stat.icon className="w-4 h-4" style={{ color: stat.color }} />
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center" style={{ background: `${stat.color}15` }}>
+                <stat.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" style={{ color: stat.color }} />
               </div>
             </div>
-            <p style={{ color: "#e8edf5", fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: "1.6rem", letterSpacing: "-0.02em" }}>
+            <p className="text-[1.35rem] sm:text-[1.6rem]" style={{ color: "#e8edf5", fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, letterSpacing: "-0.02em" }}>
               {stat.value}
             </p>
           </motion.div>
@@ -658,7 +658,7 @@ export default function Kits() {
         </div>
 
         {/* Status filters */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
           {[
             { value: "todos", label: "Todos" },
             { value: "disponivel", label: "Disponiveis" },
@@ -786,7 +786,7 @@ export default function Kits() {
 
                 {/* Actions */}
                 <div className="p-5">
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <button
                       onClick={() => handleOpenDetails(kit.id)}
                       className="flex items-center gap-2 flex-1 justify-center py-2.5 rounded-xl transition-colors hover:bg-white/5"
