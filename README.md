@@ -19,14 +19,14 @@
 
 ## 🔐 Visão Geral
 
-Aplicação para gerenciar kits e movimentações de inventário (câmeras, baterias, equipamentos), com fluxo previsto em [TODO.md](TODO.md) com estrutura de dados definida e exemplos de insert em [Examples.md](Examples.md).
+Aplicação para gerenciar kits e movimentações de inventário (câmeras, baterias, equipamentos), com fluxo previsto em [TODO.md](TODO.md).
 
 ### Tecnologias
 
 - React 19 + React Router 7
 - TypeScript + Vite
 - Tailwind CSS
-- SQL
+- NestJS + Prisma + PostgreSQL
 
 ## 📁 Estrutura do projeto
 
@@ -36,9 +36,7 @@ Aplicação para gerenciar kits e movimentações de inventário (câmeras, bate
   - `routes/home.tsx` : página inicial (`Welcome`)
   - `welcome/welcome.tsx` : tela de boas-vindas com recursos e links
 - `public/` : ativos estáticos
-- `fotos-todo/` : (acervo ou assets adicionais)
-- `TODO.md` : backlog de features, banco de dados, fluxos e prioridades
-- `Examples.md`: exemplos para populacao ou testes
+- `TODO.md` : backlog de features, fluxos e prioridades
 - `package.json` / `vite.config.ts` / `tsconfig.json` : configuração do build e deps
 
 ## ⚙️ Instalação local
@@ -63,16 +61,13 @@ npm run start
 - `npm run build` : build de produção (React Router)
 - `npm run start` : serve o build com `react-router-serve`
 - `npm run typecheck` : `react-router` typegen + `tsc`
+npm run prisma:generate
+npm run prisma:migrate
+npm run prisma:seed
 
 ## 🗂️ Banco de dados
 
-No `TODO.md` há esquema SQL proposto:
-
-- `inventario`
-- `kits`
-- `kit_itens`
-- `movimentacoes`
-- `movimentacao_itens`
+O backend usa Prisma com PostgreSQL (ver `backend/prisma/schema.prisma`).
 
 ## 🛠️ Próximas etapas
 

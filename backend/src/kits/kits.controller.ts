@@ -5,10 +5,10 @@ import {
   Get,
   Inject,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
 } from "@nestjs/common";
-import { IdParamDto } from "../common/dto/id-param.dto";
 import { CreateKitDto } from "./dto/create-kit.dto";
 import { CreateStandaloneKitItemDto } from "./dto/create-kit-item.dto";
 import { UpdateKitDto } from "./dto/update-kit.dto";
@@ -28,8 +28,8 @@ export class KitsController {
   }
 
   @Get(":id")
-  findOne(@Param() params: IdParamDto) {
-    return this.kitsService.findOne(params.id);
+  findOne(@Param("id", ParseIntPipe) id: number) {
+    return this.kitsService.findOne(id);
   }
 
   @Post()
@@ -38,13 +38,13 @@ export class KitsController {
   }
 
   @Patch(":id")
-  update(@Param() params: IdParamDto, @Body() dto: UpdateKitDto) {
-    return this.kitsService.update(params.id, dto);
+  update(@Param("id", ParseIntPipe) id: number, @Body() dto: UpdateKitDto) {
+    return this.kitsService.update(id, dto);
   }
 
   @Delete(":id")
-  remove(@Param() params: IdParamDto) {
-    return this.kitsService.remove(params.id);
+  remove(@Param("id", ParseIntPipe) id: number) {
+    return this.kitsService.remove(id);
   }
 
   @Post("itens")
@@ -53,12 +53,12 @@ export class KitsController {
   }
 
   @Patch("itens/:id")
-  updateItem(@Param() params: IdParamDto, @Body() dto: UpdateKitItemDto) {
-    return this.kitsService.updateItem(params.id, dto);
+  updateItem(@Param("id", ParseIntPipe) id: number, @Body() dto: UpdateKitItemDto) {
+    return this.kitsService.updateItem(id, dto);
   }
 
   @Delete("itens/:id")
-  removeItem(@Param() params: IdParamDto) {
-    return this.kitsService.removeItem(params.id);
+  removeItem(@Param("id", ParseIntPipe) id: number) {
+    return this.kitsService.removeItem(id);
   }
 }

@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Inventario {
+  id        Int                @id @default(autoincrement())
+  nome      String             @db.VarChar(255)
+  categoria String             @db.VarChar(255)
+  observacao String?           @db.VarChar(255)
+  unidades  Unidadeinventario[]
+  kitItens  Kititem[]
+
+  @@map("Inventario")
+}
+
+model Unidadeinventario {
+  id            Int                 @id @default(autoincrement())
+  inventarioId  Int                 @map("inventarioid")
+  patrimonio    String              @db.VarChar(100)
+  status        String              @default("disponivel") @db.VarChar(255)
+  observacao    String?             @db.VarChar(255)
+  inventario    Inventario          @relation(fields: [inventarioId], references: [id], onDelete: Cascade)
+  movimentacaoItens Movimentacaoitem[]
+
+  @@map("Unidadeinventario")
+}
+
+model Kit {
+  id           Int            @id @default(autoincrement())
+  nome         String         @db.VarChar(255)
+  descricao    String?        @db.VarChar(255)
+  usando       Boolean        @default(false)
+  itens        Kititem[]
+  movimentacoes Movimentacao[]
+
+  @@map("Kit")
+}
+
+model Kititem {
+  id           Int              @id @default(autoincrement())
+  kitId        Int              @map("kitid")
+  inventarioId Int              @map("inventarioid")
+  quantidade   Int              @default(1)
+  kit          Kit              @relation(fields: [kitId], references: [id], onDelete: Cascade)
+  inventario   Inventario       @relation(fields: [inventarioId], references: [id])
+  movimentacaoItens Movimentacaoitem[]
+
+  @@map("Kititem")
+}
+
+model Movimentacao {
+  id                 Int                 @id @default(autoincrement())
+  kitId              Int                 @map("kitid")
+  kitNome            String?             @map("kitnome") @db.VarChar(255)
+  dataSaida          DateTime            @map("datasaida") @db.Date
+  horaSaida          DateTime?           @map("horasaida") @db.Time
+  dataDevolucao      DateTime?           @map("datadevolucao") @db.Date
+  horaDevolucao      DateTime?           @map("horadevolucao") @db.Time
+  responsavelSaida   String?             @map("responsavelsaida") @db.VarChar(255)
+  responsavelRetorno String?             @map("responsavelretorno") @db.VarChar(255)
+  observacao         String?             @db.VarChar(255)
+  kit                Kit                 @relation(fields: [kitId], references: [id])
+  itens              Movimentacaoitem[]
+
+  @@map("Movimentacao")
+}
+
+model Movimentacaoitem {
+  id                  Int                 @id @default(autoincrement())
+  movimentacaoId      Int                 @map("mmovimentacaoid")
+  kitItemId           Int?                @map("kititemid")
+  unidadeInventarioId Int                 @map("unidadeinventarioid")
+  movimentacao        Movimentacao        @relation(fields: [movimentacaoId], references: [id], onDelete: Cascade)
+  kitItem             Kititem?            @relation(fields: [kitItemId], references: [id], onDelete: SetNull)
+  unidadeInventario   Unidadeinventario   @relation(fields: [unidadeInventarioId], references: [id])
+
+  @@map("Movimentacaoitem")
+}
+
+model Movimentacaohistorico {
+  id             Int       @id @default(autoincrement())
+  movimentacaoId Int       @map("movimentacaoid")
+  kitId          Int       @map("kitid")
+  kitNome        String?   @map("kitnome") @db.VarChar(255)
+  tipo           String    @db.VarChar(20)
+  data           DateTime  @db.Date
+  hora           DateTime? @db.Time
+  status         String    @db.VarChar(20)
+  responsavel    String?   @db.VarChar(255)
+  dataDevolucao  DateTime? @map("datadevolucao") @db.Date
+  observacao     String?   @db.VarChar(255)
+
+  @@map("Movimentacaohistorico")
+}

@@ -47,6 +47,10 @@ type KitTemplateItem = {
   id: number;
   name: string;
   defaultQuantity: number;
+  unitCatalog: Array<{
+    id: number;
+    patrimonio: string;
+  }>;
 };
 
 type KitTemplate = {
@@ -59,8 +63,13 @@ type MovementEquipmentRow = {
   equipmentId: number;
   equipmentName: string;
   quantityInput: string;
+  unitCatalog: Array<{
+    id: number;
+    patrimonio: string;
+  }>;
   units: Array<{
     patrimonio: string;
+    unidadeInventarioId?: number;
     note: string;
   }>;
 };
@@ -89,8 +98,15 @@ function getDefaultFormData(): MovementFormData {
   };
 }
 
-function createUnits(quantity: number) {
-  return Array.from({ length: quantity }, () => ({ patrimonio: "", note: "" }));
+function createUnits(
+  quantity: number,
+  prefills: Array<{ id: number; patrimonio: string }> = [],
+) {
+  return Array.from({ length: quantity }, (_, index) => ({
+    patrimonio: prefills[index]?.patrimonio ?? "",
+    unidadeInventarioId: prefills[index]?.id,
+    note: "",
+  }));
 }
 
 function truncateTo255(value: string) {
@@ -109,6 +125,11 @@ function mapKitsToTemplates(kits: ApiKit[]): KitTemplate[] {
       id: item.id,
       name: item.inventario?.nome ?? `Item ${item.id}`,
       defaultQuantity: Math.max(1, item.quantidade ?? 1),
+      unitCatalog:
+        item.inventario?.unidades?.map((unit) => ({
+          id: unit.id,
+          patrimonio: unit.patrimonio,
+        })) ?? [],
     })),
   }));
 }
@@ -298,7 +319,8 @@ export default function Movements() {
         equipmentId: item.id,
         equipmentName: item.name,
         quantityInput: String(item.defaultQuantity),
-        units: createUnits(item.defaultQuantity),
+        unitCatalog: item.unitCatalog,
+        units: createUnits(item.defaultQuantity, item.unitCatalog),
       })),
     );
   };
@@ -314,9 +336,15 @@ export default function Movements() {
 
         const quantity = sanitized === "" ? 0 : Number(sanitized);
         const currentUnits = row.units;
+        const additionalUnits = row.unitCatalog
+          .slice(currentUnits.length, quantity)
+          .map((unit) => ({ id: unit.id, patrimonio: unit.patrimonio }));
         const nextUnits = quantity <= currentUnits.length
           ? currentUnits.slice(0, quantity)
-          : [...currentUnits, ...createUnits(quantity - currentUnits.length)];
+          : [
+              ...currentUnits,
+              ...createUnits(quantity - currentUnits.length, additionalUnits),
+            ];
 
         return {
           ...row,
@@ -338,9 +366,26 @@ export default function Movements() {
         row.equipmentId === equipmentId
           ? {
               ...row,
-              units: row.units.map((unit, index) =>
-                index === unitIndex ? { ...unit, [field]: value } : unit,
-              ),
+              units: row.units.map((unit, index) => {
+                if (index !== unitIndex) {
+                  return unit;
+                }
+
+                if (field === "patrimonio") {
+                  const trimmed = value.trim();
+                  const matched = row.unitCatalog.find(
+                    (catalogUnit) => catalogUnit.patrimonio === trimmed,
+                  );
+
+                  return {
+                    ...unit,
+                    patrimonio: value,
+                    unidadeInventarioId: matched?.id,
+                  };
+                }
+
+                return { ...unit, note: value };
+              }),
             }
           : row,
       ),
@@ -359,47 +404,24 @@ export default function Movements() {
     const createdDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
     const createdTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
     const normalizedNote = formData.note.trim();
-    const equipmentDetails = equipmentRows
-      .map((row) => {
-        const quantity = row.quantityInput === "" ? 0 : Number(row.quantityInput);
-        if (quantity <= 0) {
-          return "";
-        }
-
-        const unitDetails = row.units
-          .map((unit, index) => {
-            const unitParts = [`#${index + 1}`];
-            if (unit.patrimonio.trim()) {
-              unitParts.push(`PAT: ${unit.patrimonio.trim()}`);
-            }
-            if (unit.note.trim()) {
-              unitParts.push(`Obs: ${unit.note.trim()}`);
-            }
-
-            return unitParts.join(" | ");
-          })
-          .join(" ; ");
-
-        const parts = [`${row.equipmentName} x${quantity}`];
-        if (unitDetails) {
-          parts.push(unitDetails);
-        }
-
-        return parts.join(" | ");
-      })
-      .filter(Boolean)
-      .join(" || ");
-
     const notes = [
       formData.viatura.trim() ? `Viatura: ${formData.viatura.trim()}` : "",
       formData.operadorAudio.trim() ? `Operador de audio: ${formData.operadorAudio.trim()}` : "",
       formData.auxUpe.trim() ? `Aux. U.P.E: ${formData.auxUpe.trim()}` : "",
       formData.opCamera.trim() ? `Op. camera: ${formData.opCamera.trim()}` : "",
-      equipmentDetails ? `Itens: ${equipmentDetails}` : "",
       normalizedNote,
     ]
       .filter(Boolean)
       .join(" • ");
+
+    const itens = equipmentRows.flatMap((row) =>
+      row.units
+        .filter((unit) => Number.isFinite(unit.unidadeInventarioId))
+        .map((unit) => ({
+          kitItemId: row.equipmentId,
+          unidadeInventarioId: unit.unidadeInventarioId as number,
+        })),
+    );
 
     const created = await runMovementMutation(async () => {
       await createMovimentacao({
@@ -408,6 +430,7 @@ export default function Movements() {
         horaSaida: createdTime,
         responsavelSaida: formData.responsavelExpedicao.trim() || undefined,
         observacao: notes ? truncateTo255(notes) : undefined,
+        itens: itens.length > 0 ? itens : undefined,
       });
     });
 
@@ -800,7 +823,7 @@ export default function Movements() {
                         <input
                           value={row.quantityInput}
                           inputMode="numeric"
-                          onChange={(event) => handleEquipmentQuantityChange(row.equipmentId, event.target.value)}
+                         readOnly
                           placeholder="Qtd"
                           className="md:col-span-5 rounded-lg px-3 py-2.5 outline-none"
                           style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", color: "#c8d6e8" }}
@@ -817,7 +840,7 @@ export default function Movements() {
 
                               <input
                                 value={unit.patrimonio}
-                                onChange={(event) => handleEquipmentUnitChange(row.equipmentId, index, "patrimonio", event.target.value)}
+                                readOnly
                                 placeholder="Patrimônio"
                                 className="md:col-span-4 rounded-lg px-3 py-2.5 outline-none"
                                 style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", color: "#c8d6e8" }}

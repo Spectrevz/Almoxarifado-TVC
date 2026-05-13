@@ -5,10 +5,10 @@ import {
   Get,
   Inject,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
 } from "@nestjs/common";
-import { IdParamDto } from "../common/dto/id-param.dto";
 import { CreateMovimentacaoDto } from "./dto/create-movimentacao.dto";
 import { CreateStandaloneMovimentacaoItemDto } from "./dto/create-movimentacao-item.dto";
 import { FinalizarMovimentacaoDto } from "./dto/finalizar-movimentacao.dto";
@@ -29,8 +29,8 @@ export class MovimentacoesController {
   }
 
   @Get(":id")
-  findOne(@Param() params: IdParamDto) {
-    return this.movimentacoesService.findOne(params.id);
+  findOne(@Param("id", ParseIntPipe) id: number) {
+    return this.movimentacoesService.findOne(id);
   }
 
   @Post()
@@ -39,21 +39,21 @@ export class MovimentacoesController {
   }
 
   @Patch(":id")
-  update(@Param() params: IdParamDto, @Body() dto: UpdateMovimentacaoDto) {
-    return this.movimentacoesService.update(params.id, dto);
+  update(@Param("id", ParseIntPipe) id: number, @Body() dto: UpdateMovimentacaoDto) {
+    return this.movimentacoesService.update(id, dto);
   }
 
   @Patch(":id/devolucao")
   finalize(
-    @Param() params: IdParamDto,
+    @Param("id", ParseIntPipe) id: number,
     @Body() dto: FinalizarMovimentacaoDto,
   ) {
-    return this.movimentacoesService.finalize(params.id, dto);
+    return this.movimentacoesService.finalize(id, dto);
   }
 
   @Delete(":id")
-  remove(@Param() params: IdParamDto) {
-    return this.movimentacoesService.remove(params.id);
+  remove(@Param("id", ParseIntPipe) id: number) {
+    return this.movimentacoesService.remove(id);
   }
 
   @Post("itens")
@@ -63,14 +63,14 @@ export class MovimentacoesController {
 
   @Patch("itens/:id")
   updateItem(
-    @Param() params: IdParamDto,
+    @Param("id", ParseIntPipe) id: number,
     @Body() dto: UpdateMovimentacaoItemDto,
   ) {
-    return this.movimentacoesService.updateItem(params.id, dto);
+    return this.movimentacoesService.updateItem(id, dto);
   }
 
   @Delete("itens/:id")
-  removeItem(@Param() params: IdParamDto) {
-    return this.movimentacoesService.removeItem(params.id);
+  removeItem(@Param("id", ParseIntPipe) id: number) {
+    return this.movimentacoesService.removeItem(id);
   }
 }

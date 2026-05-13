@@ -1,4 +1,3 @@
-import "reflect-metadata";
 import { resolve } from "node:path";
 import dotenv from "dotenv";
 import { ValidationPipe } from "@nestjs/common";

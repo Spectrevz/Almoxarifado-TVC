@@ -1,34 +1,25 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { CreateInventarioDto } from "./dto/create-inventario.dto";
 import { CreateStandaloneUnidadeInventarioDto } from "./dto/create-unidade-inventario.dto";
 import { UpdateInventarioDto } from "./dto/update-inventario.dto";
 import { UpdateUnidadeInventarioDto } from "./dto/update-unidade-inventario.dto";
-import { Inventario } from "./entities/inventario.entity";
-import { UnidadeInventario } from "./entities/unidade-inventario.entity";
+import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
 export class InventarioService {
-  constructor(
-    @InjectRepository(Inventario)
-    private readonly inventarioRepository: Repository<Inventario>,
-    @InjectRepository(UnidadeInventario)
-    private readonly unidadeRepository: Repository<UnidadeInventario>,
-  ) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   findAll() {
-    return this.inventarioRepository.find({
-      relations: { unidades: true },
-      order: { id: "ASC", unidades: { id: "ASC" } },
+    return this.prisma.inventario.findMany({
+      include: { unidades: { orderBy: { id: "asc" } } },
+      orderBy: { id: "asc" },
     });
   }
 
   async findOne(id: number) {
-    const inventario = await this.inventarioRepository.findOne({
+    const inventario = await this.prisma.inventario.findUnique({
       where: { id },
-      relations: { unidades: true },
-      order: { unidades: { id: "ASC" } },
+      include: { unidades: { orderBy: { id: "asc" } } },
     });
 
     if (!inventario) {
@@ -39,66 +30,82 @@ export class InventarioService {
   }
 
   async create(dto: CreateInventarioDto) {
-    const entity = this.inventarioRepository.create({
-      nome: dto.nome,
-      categoria: dto.categoria,
-      observacao: dto.observacao,
-      unidades: dto.unidades?.map((unidade) =>
-        this.unidadeRepository.create({
-          patrimonio: unidade.patrimonio,
-          status: unidade.status ?? "disponivel",
-          observacao: unidade.observacao,
-        }),
-      ),
+    return this.prisma.inventario.create({
+      data: {
+        nome: dto.nome,
+        categoria: dto.categoria,
+        observacao: dto.observacao,
+        unidades: dto.unidades?.length
+          ? {
+              create: dto.unidades.map((unidade) => ({
+                patrimonio: unidade.patrimonio,
+                status: unidade.status ?? "disponivel",
+                observacao: unidade.observacao,
+              })),
+            }
+          : undefined,
+      },
+      include: { unidades: { orderBy: { id: "asc" } } },
     });
-
-    return this.inventarioRepository.save(entity);
   }
 
   async update(id: number, dto: UpdateInventarioDto) {
     const inventario = await this.findOne(id);
-    this.inventarioRepository.merge(inventario, dto);
-    return this.inventarioRepository.save(inventario);
+    return this.prisma.inventario.update({
+      where: { id: inventario.id },
+      data: {
+        nome: dto.nome ?? inventario.nome,
+        categoria: dto.categoria ?? inventario.categoria,
+        observacao: dto.observacao ?? inventario.observacao,
+      },
+      include: { unidades: { orderBy: { id: "asc" } } },
+    });
   }
 
   async remove(id: number) {
-    const inventario = await this.findOne(id);
-    await this.inventarioRepository.remove(inventario);
+    await this.findOne(id);
+    await this.prisma.inventario.delete({ where: { id } });
     return { deleted: true };
   }
 
   async createUnidade(dto: CreateStandaloneUnidadeInventarioDto) {
     await this.findOne(dto.inventarioId);
-
-    const entity = this.unidadeRepository.create({
-      inventarioId: dto.inventarioId,
-      patrimonio: dto.patrimonio,
-      status: dto.status ?? "disponivel",
-      observacao: dto.observacao,
+    return this.prisma.unidadeinventario.create({
+      data: {
+        inventarioId: dto.inventarioId,
+        patrimonio: dto.patrimonio,
+        status: dto.status ?? "disponivel",
+        observacao: dto.observacao,
+      },
     });
-
-    return this.unidadeRepository.save(entity);
   }
 
   async updateUnidade(id: number, dto: UpdateUnidadeInventarioDto) {
-    const unidade = await this.unidadeRepository.findOneBy({ id });
+    const unidade = await this.prisma.unidadeinventario.findUnique({ where: { id } });
 
     if (!unidade) {
       throw new NotFoundException(`UnidadeInventario ${id} nao encontrada.`);
     }
 
-    this.unidadeRepository.merge(unidade, dto);
-    return this.unidadeRepository.save(unidade);
+    return this.prisma.unidadeinventario.update({
+      where: { id: unidade.id },
+      data: {
+        inventarioId: dto.inventarioId ?? unidade.inventarioId,
+        patrimonio: dto.patrimonio ?? unidade.patrimonio,
+        status: dto.status ?? unidade.status,
+        observacao: dto.observacao ?? unidade.observacao,
+      },
+    });
   }
 
   async removeUnidade(id: number) {
-    const unidade = await this.unidadeRepository.findOneBy({ id });
+    const unidade = await this.prisma.unidadeinventario.findUnique({ where: { id } });
 
     if (!unidade) {
       throw new NotFoundException(`UnidadeInventario ${id} nao encontrada.`);
     }
 
-    await this.unidadeRepository.remove(unidade);
+    await this.prisma.unidadeinventario.delete({ where: { id: unidade.id } });
     return { deleted: true };
   }
 }

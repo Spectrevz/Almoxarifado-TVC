@@ -133,6 +133,25 @@ export type CreateMovimentacaoPayload = {
   }>;
 };
 
+export type CreateKitPayload = {
+  nome: string;
+  descricao?: string;
+  itens?: Array<{
+    inventarioId: number;
+    quantidade?: number;
+  }>;
+};
+
+export type UpdateKitPayload = {
+  nome?: string;
+  descricao?: string;
+  usando?: boolean;
+  itens?: Array<{
+    inventarioId: number;
+    quantidade?: number;
+  }>;
+};
+
 export async function listInventario() {
   return apiRequest<ApiInventario[]>("/inventario", { method: "GET" });
 }
@@ -185,6 +204,51 @@ export async function deleteUnidadeInventario(id: number) {
 
 export async function listKits() {
   return apiRequest<ApiKit[]>("/kits", { method: "GET" });
+}
+
+export async function createKit(payload: CreateKitPayload) {
+  return apiRequest<ApiKit>("/kits", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateKit(id: number, payload: UpdateKitPayload) {
+  return apiRequest<ApiKit>(`/kits/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function createKitItem(payload: {
+  kitId: number;
+  inventarioId: number;
+  quantidade: number;
+}) {
+  return apiRequest<ApiKitItem>("/kits/itens", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateKitItem(
+  id: number,
+  payload: {
+    kitId?: number;
+    inventarioId?: number;
+    quantidade?: number;
+  },
+) {
+  return apiRequest<ApiKitItem>(`/kits/itens/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteKitItem(id: number) {
+  return apiRequest<{ deleted: boolean }>(`/kits/itens/${id}`, {
+    method: "DELETE",
+  });
 }
 
 export async function listMovements(query?: {

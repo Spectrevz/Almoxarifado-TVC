@@ -5,10 +5,10 @@ import {
   Get,
   Inject,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
 } from "@nestjs/common";
-import { IdParamDto } from "../common/dto/id-param.dto";
 import { CreateInventarioDto } from "./dto/create-inventario.dto";
 import { CreateStandaloneUnidadeInventarioDto } from "./dto/create-unidade-inventario.dto";
 import { UpdateInventarioDto } from "./dto/update-inventario.dto";
@@ -28,8 +28,8 @@ export class InventarioController {
   }
 
   @Get(":id")
-  findOne(@Param() params: IdParamDto) {
-    return this.inventarioService.findOne(params.id);
+  findOne(@Param("id", ParseIntPipe) id: number) {
+    return this.inventarioService.findOne(id);
   }
 
   @Post()
@@ -38,13 +38,13 @@ export class InventarioController {
   }
 
   @Patch(":id")
-  update(@Param() params: IdParamDto, @Body() dto: UpdateInventarioDto) {
-    return this.inventarioService.update(params.id, dto);
+  update(@Param("id", ParseIntPipe) id: number, @Body() dto: UpdateInventarioDto) {
+    return this.inventarioService.update(id, dto);
   }
 
   @Delete(":id")
-  remove(@Param() params: IdParamDto) {
-    return this.inventarioService.remove(params.id);
+  remove(@Param("id", ParseIntPipe) id: number) {
+    return this.inventarioService.remove(id);
   }
 
   @Post("unidades")
@@ -54,14 +54,14 @@ export class InventarioController {
 
   @Patch("unidades/:id")
   updateUnidade(
-    @Param() params: IdParamDto,
+    @Param("id", ParseIntPipe) id: number,
     @Body() dto: UpdateUnidadeInventarioDto,
   ) {
-    return this.inventarioService.updateUnidade(params.id, dto);
+    return this.inventarioService.updateUnidade(id, dto);
   }
 
   @Delete("unidades/:id")
-  removeUnidade(@Param() params: IdParamDto) {
-    return this.inventarioService.removeUnidade(params.id);
+  removeUnidade(@Param("id", ParseIntPipe) id: number) {
+    return this.inventarioService.removeUnidade(id);
   }
 }

@@ -5,6 +5,15 @@
     "start:dev": "tsx watch src/main.ts",
     "start": "node dist/main.js",
     "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "prisma:seed": "prisma db seed",
+    "setup:db": "npm run prisma:generate && npm run prisma:migrate"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }

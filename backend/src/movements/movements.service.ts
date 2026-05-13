@@ -23,43 +23,20 @@ export class MovementsService {
   ) {}
 
   async findAll(query: MovementsQueryDto) {
-    const movimentacoes = await this.movimentacoesService.findAll();
+    const historico = await this.movimentacoesService.listHistorico();
 
-    const events = movimentacoes.flatMap<MovementRow>((movimentacao) => {
-      const item = movimentacao.kit?.nome ?? `Kit ${movimentacao.kitId}`;
-      const saida: MovementRow = {
-        id: `${movimentacao.id}-saida`,
-        movimentacaoId: movimentacao.id,
-        type: "saída",
-        item,
-        user: movimentacao.responsavelSaida ?? "",
-        date: movimentacao.dataSaida,
-        time: movimentacao.horaSaida ?? null,
-        status: movimentacao.dataDevolucao ? "concluída" : "ativa",
-        returnDate: movimentacao.dataDevolucao ?? null,
-        note: movimentacao.observacao ?? null,
-      };
-
-      const entrada = movimentacao.dataDevolucao
-        ? {
-            id: `${movimentacao.id}-entrada`,
-            movimentacaoId: movimentacao.id,
-            type: "entrada" as const,
-            item,
-            user:
-              movimentacao.responsavelRetorno ??
-              movimentacao.responsavelSaida ??
-              "",
-            date: movimentacao.dataDevolucao,
-            time: movimentacao.horaDevolucao ?? null,
-            status: "concluída" as const,
-            returnDate: movimentacao.dataDevolucao,
-            note: movimentacao.observacao ?? null,
-          }
-        : null;
-
-      return entrada ? [entrada, saida] : [saida];
-    });
+    const events = historico.map<MovementRow>((item) => ({
+      id: `${item.movimentacaoId}-${item.tipo}`,
+      movimentacaoId: item.movimentacaoId,
+      type: item.tipo as MovementRow["type"],
+      item: item.kitNome ?? `Kit ${item.kitId}`,
+      user: item.responsavel ?? "",
+      date: item.data,
+      time: item.hora ?? null,
+      status: item.status as MovementRow["status"],
+      returnDate: item.dataDevolucao ?? null,
+      note: item.observacao ?? null,
+    }));
 
     const normalizedType =
       query.type === "saida" ? "saída" : query.type;
