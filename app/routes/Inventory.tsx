@@ -17,15 +17,15 @@ import {
   type ApiInventario,
   updateUnidadeInventario,
 } from "~/lib/api";
-import { Search, Plus, Camera, Battery, Mic, Lightbulb, Package, SlidersHorizontal } from "lucide-react";
+import { Search, Plus, Package } from "lucide-react";
 
 const categoryConfig = {
-  "Todos": { icon: Package, color: "#c8d6e8", bg: "rgba(200,214,232,0.1)" },
-  "Câmeras": { icon: Camera, color: "#f97316", bg: "rgba(249,115,22,0.1)" },
-  "Baterias": { icon: Battery, color: "#3b82f6", bg: "rgba(59,130,246,0.1)" },
-  "Microfones": { icon: Mic, color: "#a855f7", bg: "rgba(168,85,247,0.1)" },
-  "Iluminação": { icon: Lightbulb, color: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
-  "Acessórios": { icon: SlidersHorizontal, color: "#22c55e", bg: "rgba(34,197,94,0.1)" },
+  "Todos": { color: "#c8d6e8", bg: "rgba(200,214,232,0.1)" },
+  "Câmeras": { color: "#f97316", bg: "rgba(249,115,22,0.1)" },
+  "Baterias": { color: "#3b82f6", bg: "rgba(59,130,246,0.1)" },
+  "Microfones": { color: "#a855f7", bg: "rgba(168,85,247,0.1)" },
+  "Iluminação": { color: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
+  "Acessórios": { color: "#22c55e", bg: "rgba(34,197,94,0.1)" },
 };
 
 type InventoryCategory = keyof typeof categoryConfig;
@@ -519,7 +519,7 @@ export default function Inventory() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => setSelectedCategory(category)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl whitespace-nowrap transition-all"
+              className="flex items-center px-4 py-2 rounded-xl whitespace-nowrap transition-all"
               style={{
                 background: isActive ? cfg.bg : "rgba(255,255,255,0.03)",
                 border: `1px solid ${isActive ? cfg.color + "40" : "rgba(255,255,255,0.06)"}`,
@@ -529,7 +529,6 @@ export default function Inventory() {
                 fontSize: "0.82rem",
               }}
             >
-              <cfg.icon className="w-3.5 h-3.5" />
               {category}
             </motion.button>
           );
@@ -552,7 +551,6 @@ export default function Inventory() {
             {/* Mobile cards */}
             <div className="md:hidden divide-y" style={{ borderColor: "rgba(255,255,255,0.04)" }}>
               {filteredItems.map((item, index) => {
-                const cfg = categoryConfig[item.category as keyof typeof categoryConfig];
                 const isLow = item.available < item.quantity / 3;
                 const maintenanceCount = item.units.filter((unit) => unit.inMaintenance).length;
                 const outsideCount = Math.max(0, item.quantity - item.available - maintenanceCount);
@@ -566,9 +564,6 @@ export default function Inventory() {
                     className="p-4 space-y-3"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: cfg.bg }}>
-                        <cfg.icon className="w-3.5 h-3.5" style={{ color: cfg.color }} />
-                      </div>
                       <div className="min-w-0 flex-1">
                         <p className="truncate" style={{ color: "#c8d6e8", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 500, fontSize: "0.85rem" }}>{item.name}</p>
                         <p style={{ color: "#4a5d78", fontSize: "0.72rem", fontFamily: "'Space Grotesk', sans-serif" }}>{item.category}</p>
@@ -619,7 +614,6 @@ export default function Inventory() {
                   ))}
                 </div>
                 {filteredItems.map((item, index) => {
-                  const cfg = categoryConfig[item.category as keyof typeof categoryConfig];
                   const isLow = item.available < item.quantity / 3;
                   const maintenanceCount = item.units.filter((unit) => unit.inMaintenance).length;
                   const outsideCount = Math.max(0, item.quantity - item.available - maintenanceCount);
@@ -638,9 +632,6 @@ export default function Inventory() {
                       onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: cfg.bg }}>
-                          <cfg.icon className="w-3.5 h-3.5" style={{ color: cfg.color }} />
-                        </div>
                         <div className="min-w-0">
                           <p className="truncate" style={{ color: "#c8d6e8", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 500, fontSize: "0.85rem" }}>{item.name}</p>
                           <p style={{ color: "#4a5d78", fontSize: "0.7rem", fontFamily: "'Space Grotesk', sans-serif" }}>{item.category}</p>

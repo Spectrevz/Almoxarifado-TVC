@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import {
   BarChart3,
-  TrendingUp,
   Download,
   Package,
   Users,
@@ -14,7 +13,6 @@ import {
   Clock,
   ChevronRight,
   Boxes,
-  Zap,
 } from "lucide-react";
 import { useNavigate } from "react-router";
 import {
@@ -162,10 +160,9 @@ export default function Reports() {
   }, [movementEvents]);
 
   const quickActions = [
-    { label: "Nova Saída", icon: ArrowUpRight, color: "#f97316", bg: "rgba(249,115,22,0.1)", border: "rgba(249,115,22,0.2)", path: "/movimentacoes", onClick: () => navigate("/movimentacoes") },
-    { label: "Nova Entrada", icon: ArrowDownLeft, color: "#22c55e", bg: "rgba(34,197,94,0.1)", border: "rgba(34,197,94,0.2)", path: "/movimentacoes", onClick: () => navigate("/movimentacoes") },
+    { label: "Criar Equipamento", icon: Package, color: "#3b82f6", bg: "rgba(59,130,246,0.1)", border: "rgba(59,130,246,0.2)", path: "/inventario", onClick: () => navigate("/inventario") },
     { label: "Criar Kit", icon: Boxes, color: "#a855f7", bg: "rgba(168,85,247,0.1)", border: "rgba(168,85,247,0.2)", path: "/kits", onClick: () => navigate("/kits") },
-    { label: "Relatório", icon: Zap, color: "#f59e0b", bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.2)", path: "/", onClick: () => navigate("/") },
+    { label: "Nova Movimentação", icon: ArrowUpRight, color: "#f97316", bg: "rgba(249,115,22,0.1)", border: "rgba(249,115,22,0.2)", path: "/movimentacoes", onClick: () => navigate("/movimentacoes") },
   ];
 
   const quickReports = [
@@ -257,7 +254,7 @@ export default function Reports() {
         <p style={{ color: "#4a5d78", fontSize: "0.72rem", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>
           Ações Rápidas
         </p>
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
           {quickActions.map((action, index) => (
             <motion.button
               key={action.label}

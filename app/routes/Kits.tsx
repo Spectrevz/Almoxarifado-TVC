@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Search, Plus, Camera, Battery, Mic, Package, CheckCircle2, Clock, ChevronRight, Wrench } from "lucide-react";
+import { Search, Plus, Package, CheckCircle2, Clock, ChevronRight, Wrench } from "lucide-react";
 import {
   createKitItem,
   createKit,
@@ -28,7 +28,6 @@ type KitStatus = "disponivel" | "fora" | "manutencao";
 type KitItemView = {
   name: string;
   quantity: number;
-  icon: typeof Package;
   color: string;
 };
 
@@ -165,18 +164,18 @@ function getItemVisual(category: string) {
   const normalized = normalizeText(category);
 
   if (normalized.includes("camera")) {
-    return { icon: Camera, color: "#f97316" };
+    return { color: "#f97316" };
   }
 
   if (normalized.includes("bateria")) {
-    return { icon: Battery, color: "#3b82f6" };
+    return { color: "#3b82f6" };
   }
 
   if (normalized.includes("micro")) {
-    return { icon: Mic, color: "#a855f7" };
+    return { color: "#a855f7" };
   }
 
-  return { icon: Package, color: "#22c55e" };
+  return { color: "#22c55e" };
 }
 
 function resolveKitStatus(kit: ApiKit, movimentacoes: ApiMovimentacao[]): KitStatus {
@@ -221,7 +220,6 @@ function buildKitCards(kits: ApiKit[], movimentacoes: ApiMovimentacao[]): KitCar
       return {
         name: item.inventario?.nome ?? `Inventário ${item.inventarioId}`,
         quantity: item.quantidade,
-        icon: visual.icon,
         color: visual.color,
       };
     });
@@ -772,7 +770,6 @@ export default function Kits() {
                   {kit.items.slice(0, 3).map((item) => (
                     <div key={`${kit.id}-${item.name}`} className="flex items-center justify-between">
                       <div className="flex items-center gap-2 min-w-0">
-                        <item.icon className="w-3.5 h-3.5 flex-shrink-0" style={{ color: item.color }} />
                         <span className="truncate" style={{ color: "#c8d6e8", fontFamily: "'Space Grotesk', sans-serif", fontSize: "0.78rem" }}>
                           {item.name}
                         </span>
