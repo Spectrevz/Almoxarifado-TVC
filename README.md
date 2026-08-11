@@ -1,78 +1,61 @@
-<h1 align="center"> Almoxarifado TV Cultura</h1>
+<h1 align="center">Almoxarifado TV Cultura</h1>
 
-<div align="center">
-  <img src="https://raw.githubusercontent.com/devicons/devicon/6910f0503efdd315c8f9b858234310c06e04d9c0/icons/react/react-original.svg" height="30" alt="react logo"  />
-  <img width="12" />
-  <img src="https://raw.githubusercontent.com/devicons/devicon/6910f0503efdd315c8f9b858234310c06e04d9c0/icons/typescript/typescript-original.svg" height="30" alt="typescript logo"  />
-  <img width="12" />
-  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg" height="30" alt="postgresql logo"  />
-  <img width="12" />
-  <img src="https://cdn.simpleicons.org/reactrouter" height="30" alt="react-router"  />
-  <img width="12" />
-  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vite/vite-original.svg" height="30" alt="vite-logo"  />
-  <img width="12" />
-  <img src="https://cdn.simpleicons.org/tailwindcss" height="30" alt="tailwind-logo" >
-  <img width="12" />
-  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/npm/npm-original-wordmark.svg" height="30" alt="npm-logo"  />
-  <img width="12" />
-</div>
+Aplicação para gerenciamento de inventário, kits e movimentações de equipamentos.
 
-## 🔐 Visão Geral
+## Stack
 
-Aplicação para gerenciar kits e movimentações de inventário (câmeras, baterias, equipamentos), com fluxo previsto em [TODO.md](TODO.md).
+- Frontend: React 19 + React Router 7 + TypeScript + Tailwind
+- Backend: NestJS + Prisma
+- Banco: PostgreSQL
 
-### Tecnologias
+## Onboarding rápido (clone + execução)
 
-- React 19 + React Router 7
-- TypeScript + Vite
-- Tailwind CSS
-- NestJS + Prisma + PostgreSQL
-
-## 📁 Estrutura do projeto
-
-- `app/` : código principal do frontend
-  - `root.tsx` : layout global, meta, links, `ErrorBoundary`
-  - `routes.ts` : configuração de rota index para `routes/home.tsx`
-  - `routes/home.tsx` : página inicial (`Welcome`)
-  - `welcome/welcome.tsx` : tela de boas-vindas com recursos e links
-- `public/` : ativos estáticos
-- `TODO.md` : backlog de features, fluxos e prioridades
-- `package.json` / `vite.config.ts` / `tsconfig.json` : configuração do build e deps
-
-## ⚙️ Instalação local
+1. Clone o projeto:
 
 ```bash
-npm i
-npm run dev
+git clone https://github.com/Spectrevz/Almoxarifado-TVC.git
+cd Almoxarifado-TVC
 ```
 
-Acesse a porta que o Vite indicar.
-
-### Compilação para produção
+2. Instale dependências:
 
 ```bash
-npm run build
-npm run start
+npm install
 ```
 
-## 🧩 Scripts úteis
+3. Configure o banco nos arquivos:
+- [`.env`](.env)
+- [`backend/.env`](backend/.env)
 
-- `npm run dev` : ambiente de desenvolvimento
-- `npm run build` : build de produção (React Router)
-- `npm run start` : serve o build com `react-router-serve`
-- `npm run typecheck` : `react-router` typegen + `tsc`
-npm run prisma:generate
-npm run prisma:migrate
+4. Gere client Prisma + rode migração + seed:
+
+```bash
+npm run setup:db
 npm run prisma:seed
+```
 
-## 🗂️ Banco de dados
+5. Suba backend e frontend:
 
-O backend usa Prisma com PostgreSQL (ver `backend/prisma/schema.prisma`).
+```bash
+npm run backend
+npm run dev:frontend
+```
 
-## 🛠️ Próximas etapas
+Ou tudo junto:
 
-### As próximas etapas estão em
+```bash
+npm run dev:full
+```
 
-### [TODO.md](TODO.md)
+## Documentação por categoria
 
-## 📚 Documentação
+- [01 - Clone e setup local](docs/01-clone-e-setup.md)
+- [02 - Arquitetura e organização](docs/02-arquitetura-e-organizacao.md)
+- [03 - Backend e API](docs/03-backend-e-api.md)
+- [04 - Frontend e telas](docs/04-frontend-e-telas.md)
+- [05 - Banco de dados (Prisma/Postgres)](docs/05-banco-de-dados.md)
+- [06 - Scripts e operação diária](docs/06-scripts-e-operacao.md)
+
+## Backlog
+
+- [TODO.md](TODO.md)
